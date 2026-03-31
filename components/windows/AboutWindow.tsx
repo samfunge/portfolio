@@ -1,48 +1,48 @@
 import { HappyMacIcon } from '@/components/os/MacIcons';
 
-/**
- * AboutWindow — contents of About.txt
- * Pure presentational component; rendered inside the Window shell (Stage 5).
- */
 export default function AboutWindow() {
   return (
-    <div style={{ fontFamily: 'var(--font-chicago)', fontSize: 11, lineHeight: 1.7 }}>
+    <div style={{ fontFamily: 'var(--font-chicago)', fontSize: 11, lineHeight: 1.8 }}>
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
         <HappyMacIcon size={40} />
         <div>
-          <div style={{ fontWeight: 'bold', fontSize: 13 }}>About Me</div>
-          <div style={{ color: '#555', fontSize: 10 }}>Version 1.0 — Human Edition</div>
+          <div style={{ fontWeight: 'bold', fontSize: 13 }}>Samuel Funge</div>
+          <div style={{ color: '#555', fontSize: 10 }}>Software Engineering Student</div>
         </div>
       </div>
 
-      {/* Divider */}
       <div style={{ borderTop: '1px solid #000', marginBottom: 12 }} />
 
-      <p style={{ marginBottom: 8 }}>
-        Hi — I&apos;m a software engineer who builds things for the web.
-        I care deeply about developer experience, clean interfaces,
-        and systems that feel great to use.
+      <p style={{ marginBottom: 10 }}>
+        Final year Software Engineering student at Nottingham Trent University,
+        predicted First Class Honours. I have hands on experience building,
+        evaluating and deploying machine learning pipelines to live cloud
+        environments.
       </p>
-      <p style={{ marginBottom: 8 }}>
-        Currently working on full-stack projects with React, Next.js,
-        TypeScript, and whatever tool is right for the job.
-        I have a weakness for retro aesthetics and pixel-perfect UIs.
+
+      <p style={{ marginBottom: 10 }}>
+        I independently engineered a multimodal ML identification system and a
+        100 agent predictive behavioural simulation platform. My foundation is
+        in Python and system architecture, and I am driven to build world class,
+        user centric products.
       </p>
+
       <p style={{ marginBottom: 12 }}>
-        Outside of code: synthesisers, long-distance cycling,
-        and collecting dead MacOS versions.
+        Comfortable across the full stack: from AWS serverless infrastructure
+        and FastAPI backends to React frontends and native iOS apps in SwiftUI.
+        Currently: building this portfolio instead of revising.
       </p>
 
-      {/* Divider */}
       <div style={{ borderTop: '1px solid #000', marginBottom: 12 }} />
 
-      {/* Links */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {/* Contact links */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
         {[
-          { label: 'GitHub',   href: 'https://github.com' },
-          { label: 'LinkedIn', href: 'https://linkedin.com' },
-          { label: 'Email',    href: 'mailto:hello@example.com' },
+          { label: 'GitHub',   href: 'https://github.com/samfunge' },
+          { label: 'LinkedIn', href: 'https://linkedin.com/in/samfunge' },
+          { label: 'Email',    href: 'mailto:samuelfunge@icloud.com' },
         ].map(({ label, href }) => (
           <a
             key={label}
@@ -52,14 +52,22 @@ export default function AboutWindow() {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 7,
               color: '#000',
               textDecoration: 'none',
               fontFamily: 'var(--font-chicago)',
               fontSize: 11,
             }}
           >
-            <span style={{ width: 8, height: 8, background: '#000', display: 'inline-block', flexShrink: 0 }} />
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                background: '#000',
+                display: 'inline-block',
+                flexShrink: 0,
+              }}
+            />
             {label}
           </a>
         ))}

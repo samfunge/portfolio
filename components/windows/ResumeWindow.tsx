@@ -3,52 +3,118 @@
 import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '@/components/providers/AudioProvider';
 
-/**
- * ResumeWindow — pixelated resume preview with download button.
- * Replace the RESUME_URL constant and the content sections with real data.
- */
-
-const RESUME_URL = '/resume.pdf'; // place your PDF at public/resume.pdf
+const RESUME_URL = '/samuel-funge-cv.pdf';
 
 const RESUME_SECTIONS = [
-  {
-    heading: 'Experience',
-    items: [
-      {
-        title: 'Senior Software Engineer',
-        sub: 'Acme Corp · 2022 – Present',
-        bullets: [
-          'Led migration from CRA to Next.js App Router, cutting TTI by 40%.',
-          'Designed component library used across 6 product teams.',
-        ],
-      },
-      {
-        title: 'Software Engineer',
-        sub: 'Widgets Inc · 2019 – 2022',
-        bullets: [
-          'Built real-time collaborative editing features in React.',
-          'Reduced API response time by 60% via query optimisation.',
-        ],
-      },
-    ],
-  },
   {
     heading: 'Education',
     items: [
       {
-        title: 'B.Sc. Computer Science',
-        sub: 'State University · 2015 – 2019',
-        bullets: [],
+        title: 'BSc (Hons) Software Engineering',
+        sub: 'Nottingham Trent University · 2023 to 2026',
+        bullets: [
+          'Predicted First Class Honours.',
+          'Key modules: Advanced Analysis and Design, Advanced Software Engineering, Mobile Platform Applications, Service Centric and Cloud Computing.',
+        ],
+      },
+      {
+        title: 'A Levels',
+        sub: 'Newman Sixth Form College · 2021 to 2023',
+        bullets: [
+          'Computer Science, Mathematical Studies, Level 3 Certificate in Criminology, Media Studies.',
+        ],
+      },
+      {
+        title: 'GCSEs',
+        sub: 'Cardinal Newman Catholic School · 2016 to 2021',
+        bullets: [
+          '8 GCSEs including English (7), Mathematics (6) and Computer Science (7).',
+        ],
       },
     ],
   },
   {
-    heading: 'Skills',
+    heading: 'Projects',
     items: [
       {
-        title: 'TypeScript · React · Next.js · Node.js · PostgreSQL · Tailwind CSS',
+        title: 'Multimodal Recommendation & Identification System',
+        sub: 'Final Year Project · Python, ClearML, AWS Lambda, DynamoDB, Flutter',
+        bullets: [
+          'Multimodal ML pipeline across 1,000 records combining pHash (>95% TPR), Google Vision OCR (<15% CER) and audio fingerprinting (>90% TPR).',
+          'Sole developer across cloud infrastructure, API design and mobile UI using a production ready AWS serverless environment with a Flutter frontend.',
+          'Full ML experiment lifecycle managed with ClearML covering experiment tracking, model versioning and pipeline orchestration.',
+        ],
+      },
+      {
+        title: 'Swarm',
+        sub: 'Predictive Behavioural Simulation Platform · Python, FastAPI, Next.js 14, Groq, Docker',
+        bullets: [
+          'Multi agent swarm engine of 100 concurrent LLMs with a stochastic DNA generator compounding 14 behavioural traits into 1M+ unique psychological agent profiles.',
+          'Emergent swarm intelligence and real time peer trust algorithms enabling agents to elect or overthrow group leaders dynamically.',
+          'Realistic pathfinding on OpenStreetMap data with a custom physics engine that recalculates routes when simulated buildings collapse.',
+        ],
+      },
+      {
+        title: 'Dinos',
+        sub: 'Native iOS Social Events Platform · Swift, SwiftUI, Firebase, MapKit',
+        bullets: [
+          'Custom Trust Score algorithm calculating guest reliability from host ratings, contribution history and peer reports.',
+          'Privacy focused MapKit overlay abstracting precise event locations via time based unlocks.',
+          'Full Firebase BaaS integration: Auth, Cloud Firestore and Firebase Cloud Messaging.',
+        ],
+      },
+    ],
+  },
+  {
+    heading: 'Work Experience',
+    items: [
+      {
+        title: 'Barista',
+        sub: 'Avalon, Luton Airport · July 2025 to December 2025',
+        bullets: [
+          'Prepared and served high volumes of orders during peak early morning travel hours, starting shifts at 2am, maintaining consistent quality under sustained time pressure.',
+        ],
+      },
+      {
+        title: 'Bar Staff and Waiter',
+        sub: 'The Round Bush, Luton · 2024 to 2025',
+        bullets: [
+          'Delivered high volume customer service in a fast paced hospitality environment.',
+          'Successfully trained two new hires simultaneously during a maximum capacity event (Euros Final).',
+        ],
+      },
+      {
+        title: 'Receptionist and Sales Associate',
+        sub: 'TeamSport Karting, Dunstable · 2022 to 2023',
+        bullets: [
+          'Processed 200 to 300 daily transactions with a high degree of accuracy and achieved top internal sales award through upselling.',
+          'Independently diagnosed and repaired a critical system fault, eliminating the requirement for an external IT engineer.',
+        ],
+      },
+    ],
+  },
+  {
+    heading: 'Technical Skills',
+    items: [
+      {
+        title: 'Languages',
         sub: '',
-        bullets: [],
+        bullets: ['Python, Swift, Java, C++, Haskell, Bash, JavaScript, TypeScript, SQL'],
+      },
+      {
+        title: 'Cloud and Infrastructure',
+        sub: '',
+        bullets: ['AWS (Lambda, EC2, S3, DynamoDB, API Gateway, Cognito), Firebase, Docker, Supabase, PostgreSQL, SQLite, Cloudflare, Vercel'],
+      },
+      {
+        title: 'Frameworks and Tools',
+        sub: '',
+        bullets: ['React, Next.js, TailwindCSS, Flutter, SwiftUI, Express.js, FastAPI, osmnx, Git, GitHub Actions, Docker Compose, Postman'],
+      },
+      {
+        title: 'AI and ML',
+        sub: '',
+        bullets: ['ClearML, Qdrant, Groq, Google Vision API, Llama 3.1, Ollama, Zep Cloud, Composio, Claude Code'],
       },
     ],
   },
@@ -64,7 +130,8 @@ export default function ResumeWindow() {
   }
 
   return (
-    <div style={{ fontFamily: 'var(--font-chicago)', fontSize: 10, lineHeight: 1.7 }}>
+    <div style={{ fontFamily: 'var(--font-chicago)', fontSize: 10, lineHeight: 1.75 }}>
+
       {/* Header */}
       <div
         style={{
@@ -77,28 +144,30 @@ export default function ResumeWindow() {
         }}
       >
         <div>
-          <div style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 2 }}>
-            Your Name
+          <div style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 3 }}>
+            Samuel Funge
           </div>
-          <div style={{ color: '#555' }}>your.email@example.com · github.com/you</div>
+          <div style={{ color: '#555', fontSize: 9, lineHeight: 1.6 }}>
+            samuelfunge@icloud.com<br />
+            github.com/samfunge · linkedin.com/in/samfunge
+          </div>
         </div>
         <a
           href={RESUME_URL}
           download
           onClick={handleDownload}
-          style={{ textDecoration: 'none' }}
-          aria-label="Download resume PDF"
+          style={{ textDecoration: 'none', flexShrink: 0 }}
+          aria-label="Download CV as PDF"
         >
-          <button className="mac-btn" style={{ fontSize: 10, padding: '3px 10px' }}>
-            ↓ Download PDF
+          <button className="mac-btn" style={{ fontSize: 9, padding: '3px 10px' }}>
+            Download CV
           </button>
         </a>
       </div>
 
       {/* Sections */}
       {RESUME_SECTIONS.map((section) => (
-        <div key={section.heading} style={{ marginBottom: 14 }}>
-          {/* Section heading — dithered band */}
+        <div key={section.heading} style={{ marginBottom: 16 }}>
           <div
             style={{
               background: '#000',
@@ -106,21 +175,22 @@ export default function ResumeWindow() {
               padding: '2px 6px',
               fontSize: 10,
               fontWeight: 'bold',
-              marginBottom: 6,
+              marginBottom: 8,
+              letterSpacing: 0.5,
             }}
           >
             {section.heading}
           </div>
 
           {section.items.map((item, i) => (
-            <div key={i} style={{ marginBottom: 8, paddingLeft: 6 }}>
+            <div key={i} style={{ marginBottom: 10, paddingLeft: 6 }}>
               <div style={{ fontWeight: 'bold', fontSize: 11 }}>{item.title}</div>
               {item.sub && (
-                <div style={{ color: '#555', marginBottom: 2 }}>{item.sub}</div>
+                <div style={{ color: '#666', marginBottom: 3, fontSize: 9 }}>{item.sub}</div>
               )}
               {item.bullets.map((b, j) => (
-                <div key={j} style={{ display: 'flex', gap: 6, paddingLeft: 4 }}>
-                  <span style={{ flexShrink: 0 }}>·</span>
+                <div key={j} style={{ display: 'flex', gap: 6, paddingLeft: 4, marginBottom: 2 }}>
+                  <span style={{ flexShrink: 0, marginTop: 1 }}>·</span>
                   <span>{b}</span>
                 </div>
               ))}
