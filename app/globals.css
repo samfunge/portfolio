@@ -1,26 +1,365 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ─────────────────────────────────────────────────────────────
+   Tailwind v4 Theme — Retro Macintosh 128K (System 1)
+   1-bit monochrome palette, Chicago-style pixel font
+───────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-mac-black:   #000000;
+  --color-mac-white:   #ffffff;
+  --color-mac-gray:    #aaaaaa;
+  --color-mac-silver:  #cccccc;
+
+  --font-chicago: "ChicagoFLF", "Press Start 2P", monospace;
+  --font-mono:    "Courier New", monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ─────────────────────────────────────────────────────────────
+   Local Chicago-clone font (user drops file in /public/fonts/)
+   Falls back to "Press Start 2P" loaded via next/font/google
+───────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "ChicagoFLF";
+  src: url("/fonts/ChicagoFLF.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─────────────────────────────────────────────────────────────
+   Global reset / base
+───────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: #000;
+  font-family: var(--font-chicago);
+  font-size: 12px;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Mac Desktop — checker-board pattern background (System 1 gray)
+───────────────────────────────────────────────────────────── */
+.mac-desktop {
+  background-color: #ffffff;
+  background-image: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%);
+  background-size: 4px 4px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CRT Monitor Overlay
+   1. Horizontal scanlines
+   2. Radial vignette / convex bulge
+   3. Chromatic aberration (inner layer)
+───────────────────────────────────────────────────────────── */
+.crt-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  border-radius: 2% / 1.5%;
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 0, 0, 0.07) 2px,
+      rgba(0, 0, 0, 0.07) 4px
+    ),
+    radial-gradient(
+      ellipse 110% 110% at 50% 50%,
+      transparent 60%,
+      rgba(0, 0, 0, 0.45) 100%
+    );
+}
+
+.crt-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.crt-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: screen;
+  box-shadow:
+    inset 2px 0 0 0 rgba(255, 0,   0,   0.03),
+    inset -2px 0 0 0 rgba(0,   0,   255, 0.03);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CRT Glitch — triggered by Konami code
+───────────────────────────────────────────────────────────── */
+@keyframes crt-glitch {
+  0%   { transform: translate(0);        filter: none; }
+  10%  { transform: translate(-4px, 2px); filter: hue-rotate(90deg) saturate(5); }
+  20%  { transform: translate(4px, -2px); filter: hue-rotate(180deg); }
+  30%  { transform: translate(-2px, 4px); filter: invert(1); }
+  40%  { transform: translate(2px, -4px); filter: none; }
+  50%  { transform: translate(-6px, 0);   filter: brightness(2); }
+  60%  { transform: translate(6px, 2px);  filter: hue-rotate(270deg); }
+  70%  { transform: translate(-2px, -2px); filter: none; }
+  80%  { transform: translate(0, 4px);    filter: invert(0.5); }
+  90%  { transform: translate(4px, 0);    filter: none; }
+  100% { transform: translate(0);        filter: none; }
+}
+
+.crt-glitch {
+  animation: crt-glitch 0.6s steps(2) forwards;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Mac Window chrome
+───────────────────────────────────────────────────────────── */
+.mac-window {
+  background: #ffffff;
+  border: 1px solid #000000;
+  box-shadow: 2px 2px 0 #000000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mac-titlebar {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    #ffffff 0px, #ffffff 1px,
+    #000000 1px, #000000 2px
+  );
+  border-bottom: 1px solid #000000;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  gap: 6px;
+  cursor: grab;
+  user-select: none;
+}
+
+.mac-titlebar:active { cursor: grabbing; }
+
+.mac-titlebar-title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-chicago);
+  font-size: 12px;
+  font-weight: bold;
+  background: #ffffff;
+  padding: 0 6px;
+  line-height: 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.mac-close-box {
+  width: 12px;
+  height: 12px;
+  border: 1px solid #000000;
+  background: #ffffff;
+  flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mac-close-box:hover::after {
+  content: "×";
+  font-size: 10px;
+  line-height: 1;
+}
+
+.mac-window-body {
+  flex: 1;
+  overflow: auto;
+  background: #ffffff;
+  padding: 8px;
+}
+
+.mac-window-body::-webkit-scrollbar { width: 15px; }
+.mac-window-body::-webkit-scrollbar-track {
+  background: #ffffff;
+  border-left: 1px solid #000;
+}
+.mac-window-body::-webkit-scrollbar-thumb {
+  background: #000;
+  border: 1px solid #000;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Menu bar
+───────────────────────────────────────────────────────────── */
+.mac-menubar {
+  height: 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #000;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  font-family: var(--font-chicago);
+  font-size: 12px;
+  font-weight: bold;
+  user-select: none;
+  position: relative;
+  z-index: 50;
+}
+
+.mac-menubar-item {
+  padding: 0 8px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.mac-menubar-item:hover,
+.mac-menubar-item.active {
+  background: #000;
+  color: #fff;
+}
+
+.mac-menubar-clock {
+  margin-left: auto;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Desktop Icons
+───────────────────────────────────────────────────────────── */
+.mac-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: default;
+  width: 68px;
+  user-select: none;
+  outline: none;
+}
+
+.mac-icon.selected .mac-icon-img-wrap {
+  filter: invert(1);
+}
+
+.mac-icon.selected .mac-icon-label {
+  background: #000;
+  color: #fff;
+}
+
+.mac-icon-img-wrap {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mac-icon-label {
+  font-family: var(--font-chicago);
+  font-size: 10px;
+  text-align: center;
+  line-height: 1.3;
+  padding: 1px 3px;
+  word-break: break-word;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Dither fill-pattern utilities
+───────────────────────────────────────────────────────────── */
+.fill-25 {
+  background-color: #fff;
+  background-image: radial-gradient(#000 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+.fill-50 {
+  background-image: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%);
+  background-size: 4px 4px;
+}
+.fill-75 {
+  background-color: #000;
+  background-image: radial-gradient(#fff 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Boot Screen
+───────────────────────────────────────────────────────────── */
+.boot-screen {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  gap: 20px;
+  font-family: var(--font-chicago);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Mac Buttons
+───────────────────────────────────────────────────────────── */
+.mac-btn {
+  font-family: var(--font-chicago);
+  font-size: 12px;
+  background: #fff;
+  border: 1px solid #000;
+  padding: 4px 16px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 #000;
+  outline: none;
+}
+
+.mac-btn:hover  { background: #000; color: #fff; }
+.mac-btn:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* ─────────────────────────────────────────────────────────────
+   Dialog
+───────────────────────────────────────────────────────────── */
+.mac-dialog {
+  background: #fff;
+  border: 1px solid #000;
+  box-shadow: 4px 4px 0 #000;
+  padding: 16px;
+  font-family: var(--font-chicago);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 300px;
+  text-align: center;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Scrollbar / selection globals
+───────────────────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #000 #fff;
+}
+
+::selection {
+  background: #000;
+  color: #fff;
 }
