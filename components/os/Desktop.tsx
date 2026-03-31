@@ -1,11 +1,11 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { DESKTOP_ICONS } from '@/store/useDesktopStore';
 import DesktopIcon from './DesktopIcon';
+import WindowLayer from './Window';
 
 interface Props {
-  /** Slot for the draggable window layer (injected by page.tsx in Stage 5) */
   children?: React.ReactNode;
 }
 
@@ -18,13 +18,18 @@ interface Props {
  * single column, spaced 80px apart vertically — exactly like System 1 Finder.
  */
 export default function Desktop({ children }: Props) {
-  // Deselect all icons when clicking the bare desktop
+  // This ref is passed to WindowLayer so Framer Motion can constrain
+  // window drag to the desktop area (prevents dragging under the menu bar
+  // or fully off-screen).
+  const desktopRef = useRef<HTMLDivElement>(null);
+
   const handleDesktopClick = useCallback(() => {
     (document.activeElement as HTMLElement | null)?.blur();
   }, []);
 
   return (
     <div
+      ref={desktopRef}
       className="mac-desktop crt-screen"
       style={{
         flex: 1,
@@ -33,6 +38,9 @@ export default function Desktop({ children }: Props) {
       }}
       onClick={handleDesktopClick}
     >
+      {/* ── Draggable window layer ────────────────────────────────────────── */}
+      <WindowLayer containerRef={desktopRef} />
+
       {/* ── Right-column icon grid ────────────────────────────────────────── */}
       <div
         style={{
@@ -46,10 +54,8 @@ export default function Desktop({ children }: Props) {
           alignItems: 'center',
           paddingTop: 12,
           gap: 8,
-          // Slightly raised above the desktop but below windows
           zIndex: 5,
         }}
-        // Prevent icon-column clicks from propagating to the desktop deselect handler
         onClick={(e) => e.stopPropagation()}
       >
         {DESKTOP_ICONS.map((def) => (
@@ -57,7 +63,6 @@ export default function Desktop({ children }: Props) {
         ))}
       </div>
 
-      {/* ── Window layer (Stage 5) ────────────────────────────────────────── */}
       {children}
     </div>
   );
