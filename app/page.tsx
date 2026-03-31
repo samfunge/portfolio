@@ -1,6 +1,8 @@
 'use client';
 
+import { useCallback, useRef, useState } from 'react';
 import { useDesktopStore } from '@/store/useDesktopStore';
+import { useKonamiCode } from '@/hooks/useKonamiCode';
 import BootScreen from '@/components/os/BootScreen';
 import MenuBar from '@/components/os/MenuBar';
 import Desktop from '@/components/os/Desktop';
@@ -13,29 +15,45 @@ import Desktop from '@/components/os/Desktop';
  *   │  MenuBar  (20px)            │
  *   ├─────────────────────────────┤
  *   │  Desktop  (flex: 1)         │
- *   │  ┌──────────────────────┐   │
- *   │  │  Window layer        │   │  ← added in Stage 5
- *   │  │  (absolute, z:10+)   │   │
- *   │  └──────────────────────┘   │
- *   │  Icon column (absolute,right)│
+ *   │   WindowLayer (absolute)    │
+ *   │   Icon column (absolute)    │
  *   └─────────────────────────────┘
- *   CRT overlay (fixed, z:9999)   ← from globals.css
+ *   CRT overlay (fixed, z:9999)
  *
- * The BootScreen is fixed-position and sits above everything until
- * finishBoot() is called via the Zustand store.
+ * The Konami code listener fires here (global scope) so it works regardless
+ * of which window or component has focus.  When activated it adds the
+ * .crt-glitch class to the CRT overlay for the duration of the animation.
  */
 export default function Home() {
   const booted = useDesktopStore((s) => s.booted);
+  const [glitching, setGlitching] = useState(false);
+  const glitchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleKonami = useCallback(() => {
+    // Prevent overlapping glitch triggers
+    if (glitchTimer.current) clearTimeout(glitchTimer.current);
+    setGlitching(true);
+    glitchTimer.current = setTimeout(() => {
+      setGlitching(false);
+      glitchTimer.current = null;
+    }, 650); // slightly longer than the 0.6s CSS animation
+  }, []);
+
+  useKonamiCode(handleKonami);
 
   return (
     <>
-      {/* Boot sequence — renders until booted === true */}
+      {/* Boot sequence — fixed overlay until finishBoot() */}
       <BootScreen />
 
-      {/* CRT scanline / vignette overlay — always on top */}
-      <div className="crt-overlay" aria-hidden="true" />
+      {/* CRT scanline / vignette overlay — always on top.
+          .crt-glitch fires the @keyframes animation when Konami is activated. */}
+      <div
+        className={`crt-overlay${glitching ? ' crt-glitch' : ''}`}
+        aria-hidden="true"
+      />
 
-      {/* OS chrome — fades in once booted */}
+      {/* OS chrome — invisible until boot completes */}
       <div
         style={{
           display: 'flex',
@@ -48,9 +66,6 @@ export default function Home() {
         }}
       >
         <MenuBar />
-
-        {/* Desktop fills the remaining height */}
-        {/* Stage 5 injects the <WindowLayer /> as a child here */}
         <Desktop />
       </div>
     </>
