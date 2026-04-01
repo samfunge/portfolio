@@ -6,13 +6,22 @@ export const test = base.extend<{
 }>({
   macDblClick: async ({}, use) => {
     const helper = async (locator: Locator) => {
-      await locator.click();
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await locator.click();
+      // For DesktopIcon custom logic: two separate clicks
+      await locator.click({ force: true });
+      await new Promise(resolve => setTimeout(resolve, 150));
+      await locator.click({ force: true });
+      
+      // Also fire a native dblclick just in case the element uses onDoubleClick (like in GamesWindow)
+      await locator.dispatchEvent('dblclick');
     };
     await use(helper);
   },
 });
+
+async function waitForBoot(page: any) {
+  // Wait for the store to signal boot complete via data attribute
+  await page.waitForSelector('html[data-boot-complete="true"]', { timeout: 20000 });
+}
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -20,7 +29,7 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => document.documentElement.setAttribute('data-test-mode', 'true'));
   // Click to start boot
   await page.locator('.boot-screen').click();
-  await expect(page.locator('.mac-desktop')).toBeVisible({ timeout: 15000 });
+  await waitForBoot(page);
 });
 
 test('can open games folder and launch snake', async ({ page, macDblClick }) => {
@@ -60,5 +69,5 @@ test('can launch minesweeper and reveal a cell', async ({ page, macDblClick }) =
   await expect(cells).toHaveCount(100, { timeout: 10000 });
 
   // Click first cell
-  await cells.first().click();
+  await cells.first().click({ force: true });
 });

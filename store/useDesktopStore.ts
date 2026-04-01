@@ -184,7 +184,12 @@ export const useDesktopStore = create<DesktopState>((set, get) => ({
     set(state => ({ windows: { ...state.windows, [id]: { ...win, width, height } } }));
   },
 
-  finishBoot: () => set({ booted: true }),
+  finishBoot: () => {
+    set({ booted: true });
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-boot-complete', 'true');
+    }
+  },
 
   restart: () => {
     // Close all windows and re-run the boot sequence
