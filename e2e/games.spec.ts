@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('.mac-desktop')).toBeVisible({ timeout: 10000 });
+  // Click to start boot
+  await page.locator('.boot-screen').click();
+  await expect(page.locator('.mac-desktop')).toBeVisible({ timeout: 15000 });
 });
 
 test('can open games folder and launch snake', async ({ page }) => {

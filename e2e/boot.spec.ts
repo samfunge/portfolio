@@ -3,12 +3,15 @@ import { test, expect } from '@playwright/test';
 test('boot sequence finishes and lands on desktop', async ({ page }) => {
   await page.goto('/');
 
-  // Expect to see the boot screen initially
-  await expect(page.locator('.boot-screen')).toBeVisible();
+  // Expect to see the boot screen initially (power phase)
+  const bootScreen = page.locator('.boot-screen');
+  await expect(bootScreen).toBeVisible();
 
-  // The boot screen should eventually disappear (it waits for 'startup.mp3' then finishes)
-  // Since we're in dev mode it might be fast, but we'll wait for the desktop to appear
-  await expect(page.locator('.mac-desktop')).toBeVisible({ timeout: 10000 });
+  // Click to start the boot sequence
+  await bootScreen.click();
+
+  // The boot screen should eventually disappear
+  await expect(page.locator('.mac-desktop')).toBeVisible({ timeout: 15000 });
 
   // Check for some desktop icons
   await expect(page.getByText('About.txt')).toBeVisible();
@@ -17,7 +20,9 @@ test('boot sequence finishes and lands on desktop', async ({ page }) => {
 
 test('opening a window from the desktop', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('.mac-desktop')).toBeVisible({ timeout: 10000 });
+  // Initiate boot
+  await page.locator('.boot-screen').click();
+  await expect(page.locator('.mac-desktop')).toBeVisible({ timeout: 15000 });
 
   // Double click About.txt icon
   // Note: desktop icons use double click to open windows in useDesktopStore logic via DesktopIcon
