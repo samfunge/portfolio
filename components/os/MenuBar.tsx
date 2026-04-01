@@ -4,12 +4,15 @@ import { useEffect, useRef, useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '@/components/providers/AudioProvider';
 import { useDesktopStore } from '@/store/useDesktopStore';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import MacDialog from './MacDialog';
 import { HappyMacIcon, AppleIcon, SpeakerOnIcon, SpeakerOffIcon } from './MacIcons';
 
 // ─── Clock ────────────────────────────────────────────────────────────────────
 function MenuBarClock() {
   const [time, setTime] = useState('');
+  const isMobile = useIsMobile();
+  
   useEffect(() => {
     function tick() {
       const now  = new Date();
@@ -22,7 +25,8 @@ function MenuBarClock() {
     const id = setInterval(tick, 15_000);
     return () => clearInterval(id);
   }, []);
-  return <span className="mac-menubar-clock">{time}</span>;
+  
+  return <span className="mac-menubar-clock" style={{ fontSize: isMobile ? 12 : 11 }}>{time}</span>;
 }
 
 // ─── Dropdown ────────────────────────────────────────────────────────────────
@@ -43,21 +47,36 @@ interface DropdownProps {
 
 function MenuDropdown({ label, items, open, onToggle, onClose }: DropdownProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!open) return;
-    function handler(e: MouseEvent) {
+    function handler(e: MouseEvent | TouchEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     }
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
   }, [open, onClose]);
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', height: '100%' }}>
       <span
         className={`mac-menubar-item${open ? ' active' : ''}`}
-        onMouseDown={e => { e.preventDefault(); onToggle(); }}
+        onMouseDown={e => {
+          if (isMobile) return;
+          e.preventDefault();
+          onToggle();
+        }}
+        onTouchStart={e => {
+          if (!isMobile) return;
+          e.preventDefault();
+          onToggle();
+        }}
+        style={{ padding: isMobile ? '0 12px' : '0 8px' }}
       >
         {label}
       </span>
@@ -66,7 +85,7 @@ function MenuDropdown({ label, items, open, onToggle, onClose }: DropdownProps) 
         <div style={{
           position: 'absolute', top: '100%', left: 0,
           background: '#fff', border: '1px solid #000',
-          boxShadow: '2px 2px 0 #000', minWidth: 180, zIndex: 9998,
+          boxShadow: '2px 2px 0 #000', minWidth: isMobile ? 220 : 180, zIndex: 9998,
         }}>
           {items.map((item, i) =>
             item.divider ? (
@@ -75,24 +94,35 @@ function MenuDropdown({ label, items, open, onToggle, onClose }: DropdownProps) 
               <div
                 key={i}
                 style={{
-                  padding: '3px 20px',
+                  padding: isMobile ? '10px 20px' : '3px 20px',
                   fontFamily: 'var(--font-chicago)',
-                  fontSize: 12,
+                  fontSize: isMobile ? 14 : 12,
                   cursor: item.disabled ? 'default' : 'default',
                   color: item.disabled ? '#aaa' : '#000',
                   whiteSpace: 'nowrap',
                 }}
                 onMouseEnter={e => {
-                  if (!item.disabled) {
+                  if (!item.disabled && !isMobile) {
                     (e.currentTarget as HTMLElement).style.background = '#000';
                     (e.currentTarget as HTMLElement).style.color = '#fff';
                   }
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = '';
-                  (e.currentTarget as HTMLElement).style.color = item.disabled ? '#aaa' : '#000';
+                  if (!isMobile) {
+                    (e.currentTarget as HTMLElement).style.background = '';
+                    (e.currentTarget as HTMLElement).style.color = item.disabled ? '#aaa' : '#000';
+                  }
                 }}
                 onMouseDown={e => {
+                  if (isMobile) return;
+                  e.preventDefault();
+                  if (!item.disabled && item.action) {
+                    item.action();
+                    onClose();
+                  }
+                }}
+                onTouchEnd={e => {
+                  if (!isMobile) return;
                   e.preventDefault();
                   if (!item.disabled && item.action) {
                     item.action();
@@ -145,6 +175,7 @@ export default function MenuBar() {
 
   const { muted, toggleMute, play } = useAudio();
   const posthog = usePostHog();
+  const isMobile = useIsMobile();
 
   const {
     activeWindowId,
@@ -339,7 +370,7 @@ export default function MenuBar() {
       <div className="mac-menubar" style={{ zIndex: 9000 }}>
 
         <MenuDropdown
-          label={<AppleIcon size={14} style={{ marginTop: -1 }} />}
+          label={<AppleIcon size={isMobile ? 18 : 14} style={{ marginTop: -1 }} />}
           items={appleItems}
           open={openMenu === 'apple'}
           onToggle={() => open('apple')}
@@ -347,8 +378,14 @@ export default function MenuBar() {
         />
 
         <MenuDropdown label="File"    items={fileItems}    open={openMenu === 'File'}    onToggle={() => open('File')}    onClose={close} />
-        <MenuDropdown label="Edit"    items={editItems}    open={openMenu === 'Edit'}    onToggle={() => open('Edit')}    onClose={close} />
-        <MenuDropdown label="View"    items={viewItems}    open={openMenu === 'View'}    onToggle={() => open('View')}    onClose={close} />
+        
+        {!isMobile && (
+          <>
+            <MenuDropdown label="Edit"    items={editItems}    open={openMenu === 'Edit'}    onToggle={() => open('Edit')}    onClose={close} />
+            <MenuDropdown label="View"    items={viewItems}    open={openMenu === 'View'}    onToggle={() => open('View')}    onClose={close} />
+          </>
+        )}
+        
         <MenuDropdown label="Special" items={specialItems} open={openMenu === 'Special'} onToggle={() => open('Special')} onClose={close} />
 
         {/* Right controls */}
@@ -360,25 +397,27 @@ export default function MenuBar() {
               background: 'none',
               border: 'none',
               cursor: 'default',
-              padding: '0 10px',
+              padding: isMobile ? '0 12px' : '0 10px',
               height: '100%',
               display: 'flex',
               alignItems: 'center',
               outline: 'none',
             }}
             onMouseEnter={e => {
+              if (isMobile) return;
               e.currentTarget.style.background = '#000';
               const svg = e.currentTarget.querySelector('svg');
               if (svg) svg.style.filter = 'invert(1)';
             }}
             onMouseLeave={e => {
+              if (isMobile) return;
               e.currentTarget.style.background = '';
               const svg = e.currentTarget.querySelector('svg');
               if (svg) svg.style.filter = '';
             }}
             aria-label={muted ? 'Unmute sounds' : 'Mute sounds'}
           >
-            {muted ? <SpeakerOffIcon size={14} /> : <SpeakerOnIcon size={14} />}
+            {muted ? <SpeakerOffIcon size={isMobile ? 18 : 14} /> : <SpeakerOnIcon size={isMobile ? 18 : 14} />}
           </button>
           <div style={{ height: '60%', width: 1, background: '#000', opacity: 0.2, margin: '0 4px' }} />
           <MenuBarClock />

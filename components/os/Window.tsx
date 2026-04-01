@@ -9,6 +9,7 @@ import {
 } from 'framer-motion';
 import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '@/components/providers/AudioProvider';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import {
   useDesktopStore,
   type WindowState,
@@ -49,6 +50,7 @@ function Window({ win, containerRef }: WindowProps) {
     useDesktopStore();
   const { play } = useAudio();
   const posthog = usePostHog();
+  const isMobile = useIsMobile();
   const isActive = activeWindowId === win.id;
 
   // ── Motion values for position ──────────────────────────────────────────────
@@ -58,25 +60,40 @@ function Window({ win, containerRef }: WindowProps) {
   const y = useMotionValue(win.y);
 
   // Sync motion values if the store position changes externally
-  useEffect(() => { x.set(win.x); }, [win.x]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { y.set(win.y); }, [win.y]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!isMobile) {
+      x.set(win.x);
+    } else {
+      x.set(0);
+    }
+  }, [win.x, isMobile]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!isMobile) {
+      y.set(win.y);
+    } else {
+      y.set(0);
+    }
+  }, [win.y, isMobile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Drag controls — only titlebar starts the drag ──────────────────────────
   const dragControls = useDragControls();
 
   const handleTitlebarPointerDown = useCallback(
     (e: React.PointerEvent) => {
+      if (isMobile) return;
       e.preventDefault(); // prevent text selection during drag
       focusWindow(win.id);
       dragControls.start(e);
     },
-    [dragControls, focusWindow, win.id]
+    [dragControls, focusWindow, win.id, isMobile]
   );
 
   // ── Save final position to store after drag ────────────────────────────────
   const handleDragEnd = useCallback(() => {
+    if (isMobile) return;
     moveWindow(win.id, x.get(), y.get());
-  }, [moveWindow, win.id, x, y]);
+  }, [moveWindow, win.id, x, y, isMobile]);
 
   // ── Close ──────────────────────────────────────────────────────────────────
   const handleClose = useCallback(
@@ -94,6 +111,7 @@ function Window({ win, containerRef }: WindowProps) {
 
   const handleResizePointerDown = useCallback(
     (e: React.PointerEvent) => {
+      if (isMobile) return;
       e.stopPropagation();
       e.currentTarget.setPointerCapture(e.pointerId);
       resizeOrigin.current = {
@@ -103,12 +121,12 @@ function Window({ win, containerRef }: WindowProps) {
         h: win.height,
       };
     },
-    [win.width, win.height]
+    [win.width, win.height, isMobile]
   );
 
   const handleResizePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!resizeOrigin.current) return;
+      if (!resizeOrigin.current || isMobile) return;
       const dw = e.clientX - resizeOrigin.current.mx;
       const dh = e.clientY - resizeOrigin.current.my;
       resizeWindow(
@@ -117,7 +135,7 @@ function Window({ win, containerRef }: WindowProps) {
         Math.max(MIN_H, resizeOrigin.current.h + dh)
       );
     },
-    [resizeWindow, win.id]
+    [resizeWindow, win.id, isMobile]
   );
 
   const handleResizePointerUp = useCallback(() => {
@@ -132,7 +150,7 @@ function Window({ win, containerRef }: WindowProps) {
     <motion.div
       // Unique key so AnimatePresence tracks identity across open/close
       layout={false}
-      drag
+      drag={!isMobile}
       dragControls={dragControls}
       dragListener={false}    // only titlebar triggers drag
       dragMomentum={false}    // no physics — direct 1:1 movement
@@ -141,17 +159,17 @@ function Window({ win, containerRef }: WindowProps) {
       style={{
         x,
         y,
-        width: win.width,
-        height: win.height,
+        width: isMobile ? '100%' : win.width,
+        height: isMobile ? '100%' : win.height,
         position: 'absolute',
         top: 0,
         left: 0,
         zIndex: win.zIndex,
       }}
       // Enter animation — scale up from 90% like System 1 window open
-      initial={{ opacity: 0, scale: 0.92 }}
+      initial={{ opacity: 0, scale: isMobile ? 1 : 0.92 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.88 }}
+      exit={{ opacity: 0, scale: isMobile ? 1 : 0.88 }}
       transition={{ duration: 0.12, ease: 'easeOut' }}
       onDragEnd={handleDragEnd}
       onMouseDown={() => focusWindow(win.id)}
@@ -166,6 +184,7 @@ function Window({ win, containerRef }: WindowProps) {
         style={{
           // Active window shows solid stripe; inactive fades to near-invisible
           opacity: isActive ? 1 : 0.4,
+          cursor: isMobile ? 'default' : undefined
         }}
       >
         {/* Close box */}
@@ -191,26 +210,28 @@ function Window({ win, containerRef }: WindowProps) {
       </div>
 
       {/* ── Resize handle (bottom-right) ────────────────────────────────────── */}
-      <div
-        style={{
-          position: 'absolute',
-          right: 0,
-          bottom: 0,
-          width: RESIZE_HANDLE,
-          height: RESIZE_HANDLE,
-          cursor: 'nwse-resize',
-          // Classic Mac resize box: three diagonal lines
-          backgroundImage: `repeating-linear-gradient(
-            135deg,
-            #000 0px, #000 1px,
-            transparent 1px, transparent 4px
-          )`,
-        }}
-        onPointerDown={handleResizePointerDown}
-        onPointerMove={handleResizePointerMove}
-        onPointerUp={handleResizePointerUp}
-        aria-hidden="true"
-      />
+      {!isMobile && (
+        <div
+          style={{
+            position: 'absolute',
+            right: 0,
+            bottom: 0,
+            width: RESIZE_HANDLE,
+            height: RESIZE_HANDLE,
+            cursor: 'nwse-resize',
+            // Classic Mac resize box: three diagonal lines
+            backgroundImage: `repeating-linear-gradient(
+              135deg,
+              #000 0px, #000 1px,
+              transparent 1px, transparent 4px
+            )`,
+          }}
+          onPointerDown={handleResizePointerDown}
+          onPointerMove={handleResizePointerMove}
+          onPointerUp={handleResizePointerUp}
+          aria-hidden="true"
+        />
+      )}
     </motion.div>
   );
 }
@@ -224,11 +245,19 @@ interface WindowLayerProps {
 
 export default function WindowLayer({ containerRef }: WindowLayerProps) {
   const windows = useDesktopStore((s) => s.windows);
+  const isMobile = useIsMobile();
+  const activeWindowId = useDesktopStore((s) => s.activeWindowId);
+
   const openWindows = Object.values(windows) as WindowState[];
+
+  // On mobile, only show the active window to keep the UI clean
+  const visibleWindows = isMobile
+    ? openWindows.filter(w => w.id === activeWindowId)
+    : openWindows;
 
   return (
     <AnimatePresence>
-      {openWindows.map((win) => (
+      {visibleWindows.map((win) => (
         <Window key={win.id} win={win} containerRef={containerRef} />
       ))}
     </AnimatePresence>

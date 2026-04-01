@@ -3,6 +3,7 @@
 import { useDesktopStore } from '@/store/useDesktopStore';
 import { useAudio } from '@/components/providers/AudioProvider';
 import { usePostHog } from 'posthog-js/react';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { GamesIcon } from '@/components/os/MacIcons';
 
 const GAMES = [
@@ -21,12 +22,19 @@ export default function GamesWindow() {
   const openWindow = useDesktopStore((s) => s.openWindow);
   const { play } = useAudio();
   const posthog = usePostHog();
+  const isMobile = useIsMobile();
 
   function handleLaunch(id: typeof GAMES[number]['id'], label: string) {
     play('click');
     posthog.capture('window_opened', { window_name: label });
     openWindow(id);
   }
+
+  const launchHandler = (id: typeof GAMES[number]['id'], label: string) => {
+    if (isMobile) {
+      handleLaunch(id, label);
+    }
+  };
 
   return (
     <div style={{ fontFamily: 'var(--font-chicago)', fontSize: 10 }}>
@@ -52,7 +60,8 @@ export default function GamesWindow() {
           <button
             key={g.id}
             onDoubleClick={() => handleLaunch(g.id, g.label)}
-            title={`Double-click to play: ${g.label}`}
+            onClick={() => launchHandler(g.id, g.label)}
+            title={`${isMobile ? 'Tap' : 'Double-click'} to play: ${g.label}`}
             aria-label={g.label}
             data-testid={`icon-${g.id}`}
             style={{
@@ -83,7 +92,7 @@ export default function GamesWindow() {
           lineHeight: 1.6,
         }}
       >
-        <em>Double-click a game icon to play.</em>
+        <em>{isMobile ? 'Tap' : 'Double-click'} a game icon to play.</em>
       </div>
     </div>
   );

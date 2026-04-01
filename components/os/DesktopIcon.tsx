@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '@/components/providers/AudioProvider';
 import { useDesktopStore, type DesktopIconDef } from '@/store/useDesktopStore';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import {
   FolderIcon,
   FileTextIcon,
@@ -33,6 +34,7 @@ export default function DesktopIcon({ def }: Props) {
   const openWindow = useDesktopStore((s) => s.openWindow);
   const { play } = useAudio();
   const posthog = usePostHog();
+  const isMobile = useIsMobile();
 
   // Track click timing for double-click detection without relying on
   // the native dblclick event (which fires too slowly on some trackpads).
@@ -41,6 +43,15 @@ export default function DesktopIcon({ def }: Props) {
   const handleClick = useCallback(
     (e: React.MouseEvent | React.KeyboardEvent) => {
       e.stopPropagation(); // prevent desktop deselect
+
+      if (isMobile) {
+        // Single tap to open on mobile
+        play('click');
+        openWindow(def.id);
+        posthog.capture('window_opened_mobile', { window_name: def.label });
+        setSelected(false);
+        return;
+      }
 
       const now = Date.now();
       const isDouble = now - lastClickRef.current < 400;
@@ -55,7 +66,7 @@ export default function DesktopIcon({ def }: Props) {
         setSelected(true);
       }
     },
-    [def, openWindow, play, posthog]
+    [def, openWindow, play, posthog, isMobile]
   );
 
   const handleKeyDown = useCallback(

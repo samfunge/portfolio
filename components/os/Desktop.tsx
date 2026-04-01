@@ -2,6 +2,7 @@
 
 import { useCallback, useRef } from 'react';
 import { DESKTOP_ICONS, useDesktopStore, type DesktopIconDef, type WindowId } from '@/store/useDesktopStore';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import DesktopIcon from './DesktopIcon';
 import WindowLayer from './Window';
 
@@ -12,6 +13,7 @@ interface Props {
 export default function Desktop({ children }: Props) {
   const desktopRef = useRef<HTMLDivElement>(null);
   const userFolders = useDesktopStore((s) => s.userFolders);
+  const isMobile = useIsMobile();
 
   const handleDesktopClick = useCallback(() => {
     (document.activeElement as HTMLElement | null)?.blur();
@@ -24,6 +26,8 @@ export default function Desktop({ children }: Props) {
     gridCol: 2,
     gridRow: i + 1,
   }));
+
+  const allIcons = [...DESKTOP_ICONS, ...folderDefs];
 
   return (
     <div
@@ -39,50 +43,72 @@ export default function Desktop({ children }: Props) {
       {/* ── Draggable window layer ────────────────────────────────────────── */}
       <WindowLayer containerRef={desktopRef} />
 
-      {/* ── Right-column icon grid (static icons) ────────────────────────── */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: 84,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          paddingTop: 12,
-          gap: 8,
-          zIndex: 5,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {DESKTOP_ICONS.map((def) => (
-          <DesktopIcon key={def.id} def={def} />
-        ))}
-      </div>
-
-      {/* ── Left-column icon grid (user folders) ─────────────────────────── */}
-      {folderDefs.length > 0 && (
+      {/* ── Icon layout ───────────────────────────────────────────────────── */}
+      {isMobile ? (
         <div
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            bottom: 0,
-            width: 84,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            paddingTop: 12,
-            gap: 8,
-            zIndex: 5,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+            gap: '16px',
+            padding: '20px',
+            width: '100%',
+            height: '100%',
+            overflowY: 'auto',
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {folderDefs.map((def) => (
+          {allIcons.map((def) => (
             <DesktopIcon key={def.id} def={def} />
           ))}
         </div>
+      ) : (
+        <>
+          {/* Right-column icon grid (static icons) */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: 84,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              paddingTop: 12,
+              gap: 8,
+              zIndex: 5,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {DESKTOP_ICONS.map((def) => (
+              <DesktopIcon key={def.id} def={def} />
+            ))}
+          </div>
+
+          {/* Left-column icon grid (user folders) */}
+          {folderDefs.length > 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                bottom: 0,
+                width: 84,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                paddingTop: 12,
+                gap: 8,
+                zIndex: 5,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {folderDefs.map((def) => (
+                <DesktopIcon key={def.id} def={def} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {children}

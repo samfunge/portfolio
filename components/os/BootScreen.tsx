@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAudio } from '@/components/providers/AudioProvider';
 import { useDesktopStore } from '@/store/useDesktopStore';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { HappyMacIcon } from './MacIcons';
 
 type Phase =
@@ -22,6 +23,7 @@ export default function BootScreen() {
   const { unlock, play } = useAudio();
   const finishBoot = useDesktopStore((s) => s.finishBoot);
   const booted = useDesktopStore((s) => s.booted);
+  const isMobile = useIsMobile();
 
   const [phase, setPhase] = useState<Phase>('power');
   const [progress, setProgress] = useState(0);
@@ -81,7 +83,7 @@ export default function BootScreen() {
         style={{ background: '#000', cursor: 'pointer' }}
         onClick={handlePowerClick}
         role="button"
-        aria-label="Click to start"
+        aria-label={isMobile ? "Tap to start" : "Click to start"}
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && handlePowerClick()}
       >
@@ -105,7 +107,7 @@ export default function BootScreen() {
             opacity: 0.7,
           }}
         >
-          CLICK TO START
+          {isMobile ? 'TAP' : 'CLICK'} TO START
         </span>
       </div>
     );

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAudio } from '@/components/providers/AudioProvider';
 import { usePostHog } from 'posthog-js/react';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { FolderIcon, FileTextIcon } from '@/components/os/MacIcons';
 
 interface Project {
@@ -68,9 +69,14 @@ export default function ProjectsWindow() {
   const [selected, setSelected] = useState<Project | null>(null);
   const { play } = useAudio();
   const posthog = usePostHog();
+  const isMobile = useIsMobile();
 
   function handleSingleClick(p: Project) {
     play('click');
+    if (isMobile && selected?.id === p.id) {
+      handleDoubleClick(p);
+      return;
+    }
     setSelected(p);
   }
 
@@ -95,7 +101,7 @@ export default function ProjectsWindow() {
         }}
       >
         <FolderIcon size={16} />
-        <span>{PROJECTS.length} items &nbsp;·&nbsp; Click to preview &nbsp;·&nbsp; Double click to open on GitHub</span>
+        <span>{PROJECTS.length} items &nbsp;·&nbsp; {isMobile ? 'Tap to preview, tap again to open' : 'Click to preview · Double click to open on GitHub'}</span>
       </div>
 
       {/* Icons row */}
