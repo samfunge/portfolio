@@ -3,6 +3,7 @@ import { Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import PostHogProvider from "@/components/providers/PostHogProvider";
 import AudioProvider from "@/components/providers/AudioProvider";
+import AnimatedFavicon from "@/components/os/AnimatedFavicon";
 
 // Fallback pixel font — used only when ChicagoFLF.ttf is absent from /public/fonts/.
 // The CSS @font-face in globals.css references ChicagoFLF first; this variable
@@ -15,7 +16,7 @@ const pressStart2P = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
-  title: "Portfolio — Mac OS 1",
+  title: "Samuel Funge",
   description: "A retro Macintosh 128K portfolio experience",
 };
 
@@ -38,6 +39,7 @@ export default function RootLayout({
         Components — it is itself a 'use client' boundary.
       */}
       <body className="h-full overflow-hidden">
+        <AnimatedFavicon />
         <PostHogProvider>
           <AudioProvider>
             {children}
