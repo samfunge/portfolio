@@ -3,6 +3,7 @@ import { Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import PostHogProvider from "@/components/providers/PostHogProvider";
 import AudioProvider from "@/components/providers/AudioProvider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Fallback pixel font — used only when ChicagoFLF.ttf is absent from /public/fonts/.
 // The CSS @font-face in globals.css references ChicagoFLF first; this variable
@@ -43,6 +44,7 @@ export default function RootLayout({
             {children}
           </AudioProvider>
         </PostHogProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
