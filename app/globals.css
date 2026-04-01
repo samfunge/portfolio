@@ -84,6 +84,12 @@ html, body {
     );
 }
 
+/* Disable during E2E tests to prevent pointer interception issues */
+[data-test-mode="true"] .crt-overlay,
+[data-test-mode="true"] .crt-screen::before {
+  display: none !important;
+}
+
 .crt-screen {
   position: relative;
   width: 100%;

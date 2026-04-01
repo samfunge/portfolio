@@ -1,22 +1,38 @@
-import { test, expect } from '@playwright/test';
+import { test as base, expect, type Locator } from '@playwright/test';
+
+// Extend base test with a custom dblclick helper that matches our app's 400ms logic
+export const test = base.extend<{
+  macDblClick: (locator: Locator) => Promise<void>;
+}>({
+  macDblClick: async ({}, use) => {
+    const helper = async (locator: Locator) => {
+      await locator.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+      await locator.click();
+    };
+    await use(helper);
+  },
+});
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
+  // Enable test mode to disable CRT overlays/pseudo-elements
+  await page.evaluate(() => document.documentElement.setAttribute('data-test-mode', 'true'));
   // Click to start boot
   await page.locator('.boot-screen').click();
   await expect(page.locator('.mac-desktop')).toBeVisible({ timeout: 15000 });
 });
 
-test('can open games folder and launch snake', async ({ page }) => {
+test('can open games folder and launch snake', async ({ page, macDblClick }) => {
   // Open games folder
-  await page.getByRole('button', { name: /Games/ }).dblclick({ force: true });
-  await expect(page.locator('.mac-window').filter({ hasText: 'Games' })).toBeVisible();
+  await macDblClick(page.getByTestId('icon-games'));
+  await expect(page.getByTestId('window-games')).toBeVisible();
 
   // Launch snake
-  await page.getByRole('button', { name: /Snake/ }).dblclick({ force: true });
+  await macDblClick(page.getByTestId('icon-snake'));
 
   // Snake window should appear
-  await expect(page.locator('.mac-window').filter({ hasText: 'Snake' })).toBeVisible();
+  await expect(page.getByTestId('window-snake')).toBeVisible();
 
   // Canvas should be there
   const canvas = page.locator('canvas[aria-label="Snake game canvas"]');
@@ -26,15 +42,15 @@ test('can open games folder and launch snake', async ({ page }) => {
   await expect(page.getByText('SCORE: 0')).toBeVisible();
 });
 
-test('can launch minesweeper and reveal a cell', async ({ page }) => {
+test('can launch minesweeper and reveal a cell', async ({ page, macDblClick }) => {
   // Open games folder
-  await page.getByRole('button', { name: /Games/ }).dblclick({ force: true });
+  await macDblClick(page.getByTestId('icon-games'));
   
   // Double click Minesweeper icon
-  await page.getByRole('button', { name: /Minesweeper/ }).dblclick({ force: true });
+  await macDblClick(page.getByTestId('icon-minesweeper'));
 
   // Minesweeper window should appear
-  const msWindow = page.locator('.mac-window').filter({ hasText: 'Minesweeper' });
+  const msWindow = page.getByTestId('window-minesweeper');
   await expect(msWindow).toBeVisible();
 
   // The grid cells in Minesweeper

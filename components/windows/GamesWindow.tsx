@@ -54,6 +54,7 @@ export default function GamesWindow() {
             onDoubleClick={() => handleLaunch(g.id, g.label)}
             title={`Double-click to play: ${g.label}`}
             aria-label={g.label}
+            data-testid={`icon-${g.id}`}
             style={{
               background: 'none',
               border: 'none',

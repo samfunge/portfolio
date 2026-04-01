@@ -77,6 +77,7 @@ export default function DesktopIcon({ def }: Props) {
       tabIndex={0}
       role="button"
       aria-label={`${def.label} — double-click to open`}
+      data-testid={`icon-${def.id}`}
       // Deselect on blur (clicking elsewhere)
       onBlur={() => setSelected(false)}
     >

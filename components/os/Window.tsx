@@ -157,6 +157,7 @@ function Window({ win, containerRef }: WindowProps) {
       onMouseDown={() => focusWindow(win.id)}
       className="mac-window"
       aria-label={`${win.title} window`}
+      data-testid={`window-${win.id}`}
     >
       {/* ── Title bar ──────────────────────────────────────────────────────── */}
       <div
