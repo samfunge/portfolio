@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '@/components/providers/AudioProvider';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const COLS     = 10;
 const BRICK_W  = 26;
@@ -105,6 +106,7 @@ export default function Breakout() {
   const wrapRef   = useRef<HTMLDivElement>(null);
   const posthog   = usePostHog();
   const { play }  = useAudio();
+  const isMobile  = useIsMobile();
 
   const [phase, setPhase] = useState<Phase>('idle');
   const phaseRef  = useRef<Phase>('idle');
@@ -116,6 +118,12 @@ export default function Breakout() {
   const redraw = useCallback(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (ctx) draw(ctx, stateRef.current, phaseRef.current);
+  }, []);
+
+  const startGame = useCallback(() => {
+    stateRef.current = makeState();
+    phaseRef.current = 'playing';
+    setPhase('playing');
   }, []);
 
   const endGame = useCallback((won: boolean) => {
@@ -236,12 +244,10 @@ export default function Breakout() {
     keysRef.current.add(e.key);
     if (phaseRef.current === 'idle' || phaseRef.current === 'over' || phaseRef.current === 'win') {
       if (['Shift','Control','Alt','Meta','Tab'].includes(e.key)) return;
-      stateRef.current = makeState();
-      phaseRef.current = 'playing';
-      setPhase('playing');
+      startGame();
     }
     if (['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-  }, []);
+  }, [startGame]);
 
   const handleKeyUp = useCallback((e: React.KeyboardEvent) => {
     keysRef.current.delete(e.key);
@@ -253,6 +259,16 @@ export default function Breakout() {
     const mx = e.clientX - rect.left;
     stateRef.current.padX = Math.max(0, Math.min(W - PAD_W, mx - PAD_W / 2));
   }, []);
+
+  const handleTouch = useCallback((e: React.TouchEvent) => {
+    if (phaseRef.current !== 'playing') {
+      startGame();
+      return;
+    }
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const mx = e.touches[0].clientX - rect.left;
+    stateRef.current.padX = Math.max(0, Math.min(W - PAD_W, mx - PAD_W / 2));
+  }, [startGame]);
 
   return (
     <div
@@ -268,12 +284,20 @@ export default function Breakout() {
         width={W}
         height={H}
         onMouseMove={handleMouseMove}
-        style={{ border: '1px solid #000', imageRendering: 'pixelated', display: 'block', cursor: 'none' }}
+        onTouchMove={handleTouch}
+        onTouchStart={handleTouch}
+        style={{ border: '1px solid #000', imageRendering: 'pixelated', display: 'block', cursor: 'none', touchAction: 'none' }}
         aria-label="Breakout game"
       />
-      <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>
-        Arrow keys or mouse to move
-      </div>
+      {!isMobile ? (
+        <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>
+          Arrow keys or mouse to move
+        </div>
+      ) : (
+        <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>
+          Drag to move paddle
+        </div>
+      )}
     </div>
   );
 }

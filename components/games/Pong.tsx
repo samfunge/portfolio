@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '@/components/providers/AudioProvider';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const W          = 320;
 const H          = 190;
@@ -111,6 +112,7 @@ export default function Pong() {
   const wrapRef     = useRef<HTMLDivElement>(null);
   const posthog     = usePostHog();
   const { play }    = useAudio();
+  const isMobile    = useIsMobile();
 
   const [phase, setPhase] = useState<Phase>('idle');
   const phaseRef    = useRef<Phase>('idle');
@@ -227,20 +229,34 @@ export default function Pong() {
     return () => cancelAnimationFrame(rafRef.current);
   }, [phase, loop]);
 
+  const startGame = useCallback(() => {
+    stateRef.current = makeState();
+    phaseRef.current = 'playing';
+    setPhase('playing');
+  }, []);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     keysRef.current.add(e.key);
     if (phaseRef.current === 'idle' || phaseRef.current === 'over') {
       if (['Shift','Control','Alt','Meta','Tab'].includes(e.key)) return;
-      stateRef.current = makeState();
-      phaseRef.current = 'playing';
-      setPhase('playing');
+      startGame();
     }
     if (['ArrowUp','ArrowDown'].includes(e.key)) e.preventDefault();
-  }, []);
+  }, [startGame]);
 
   const handleKeyUp = useCallback((e: React.KeyboardEvent) => {
     keysRef.current.delete(e.key);
   }, []);
+
+  const moveUp = (active: boolean) => {
+    if (active) keysRef.current.add('ArrowUp');
+    else keysRef.current.delete('ArrowUp');
+  };
+
+  const moveDown = (active: boolean) => {
+    if (active) keysRef.current.add('ArrowDown');
+    else keysRef.current.delete('ArrowDown');
+  };
 
   return (
     <div
@@ -248,6 +264,9 @@ export default function Pong() {
       tabIndex={0}
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
+      onPointerDown={() => {
+        if (phaseRef.current === 'idle' || phaseRef.current === 'over') startGame();
+      }}
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', outline: 'none', userSelect: 'none', padding: 4 }}
       onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) e.currentTarget.focus({ preventScroll: true }); }}
     >
@@ -258,9 +277,38 @@ export default function Pong() {
         style={{ border: '1px solid #000', imageRendering: 'pixelated', display: 'block' }}
         aria-label="Pong game"
       />
-      <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>
-        W / S or Arrow keys to move
-      </div>
+      
+      {!isMobile ? (
+        <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>
+          W / S or Arrow keys to move
+        </div>
+      ) : (
+        <div style={{ marginTop: 12, display: 'flex', gap: 20 }}>
+          <button 
+            style={btnStyle} 
+            onPointerDown={(e) => { e.stopPropagation(); moveUp(true); }}
+            onPointerUp={() => moveUp(false)}
+            onPointerLeave={() => moveUp(false)}
+          >UP</button>
+          <button 
+            style={btnStyle} 
+            onPointerDown={(e) => { e.stopPropagation(); moveDown(true); }}
+            onPointerUp={() => moveDown(false)}
+            onPointerLeave={() => moveDown(false)}
+          >DOWN</button>
+        </div>
+      )}
     </div>
   );
 }
+
+const btnStyle: React.CSSProperties = {
+  background: '#fff',
+  border: '1px solid #000',
+  fontFamily: 'var(--font-chicago)',
+  fontSize: 12,
+  padding: '12px 24px',
+  cursor: 'pointer',
+  boxShadow: '1px 1px 0 #000',
+  touchAction: 'none',
+};

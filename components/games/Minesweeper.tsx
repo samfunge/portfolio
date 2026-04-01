@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '@/components/providers/AudioProvider';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -71,9 +72,11 @@ export default function Minesweeper() {
   const [status, setStatus] = useState<GameStatus>('playing');
   const [minesLeft, setMinesLeft] = useState(MINES_COUNT);
   const [timer, setTimer] = useState(0);
+  const [flagMode, setFlagMode] = useState(false);
   
   const posthog = usePostHog();
   const { play } = useAudio();
+  const isMobile = useIsMobile();
 
   // ─── Initialization ─────────────────────────────────────────────────────────
 
@@ -82,6 +85,7 @@ export default function Minesweeper() {
     setStatus('playing');
     setMinesLeft(MINES_COUNT);
     setTimer(0);
+    setFlagMode(false);
   }, []);
 
   // Timer logic
@@ -96,7 +100,14 @@ export default function Minesweeper() {
   // ─── Game Actions ───────────────────────────────────────────────────────────
 
   const revealCell = (r: number, c: number) => {
-    if (status !== 'playing' || grid[r][c].revealed || grid[r][c].flagged) return;
+    if (status !== 'playing' || grid[r][c].revealed) return;
+
+    if (flagMode) {
+      toggleFlagInternal(r, c);
+      return;
+    }
+
+    if (grid[r][c].flagged) return;
 
     const newGrid = [...grid.map((row) => [...row])];
     
@@ -148,8 +159,7 @@ export default function Minesweeper() {
     }
   };
 
-  const toggleFlag = (e: React.MouseEvent, r: number, c: number) => {
-    e.preventDefault();
+  const toggleFlagInternal = (r: number, c: number) => {
     if (status !== 'playing' || grid[r][c].revealed) return;
 
     const newGrid = [...grid.map((row) => [...row])];
@@ -158,6 +168,11 @@ export default function Minesweeper() {
     setGrid(newGrid);
     setMinesLeft((prev) => prev + (isFlagged ? -1 : 1));
     play('click');
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, r: number, c: number) => {
+    e.preventDefault();
+    toggleFlagInternal(r, c);
   };
 
   // ─── Render ─────────────────────────────────────────────────────────────────
@@ -228,7 +243,7 @@ export default function Minesweeper() {
             <div
               key={`${r}-${c}`}
               onClick={() => revealCell(r, c)}
-              onContextMenu={(e) => toggleFlag(e, r, c)}
+              onContextMenu={(e) => handleContextMenu(e, r, c)}
               role="gridcell"
               aria-label={`Cell ${r}-${c}`}
               style={{
@@ -240,6 +255,7 @@ export default function Minesweeper() {
                 fontSize: '12px',
                 fontWeight: 'bold',
                 cursor: 'default',
+                touchAction: 'none',
                 ...(cell.revealed
                   ? {
                       background: '#ddd',
@@ -266,6 +282,28 @@ export default function Minesweeper() {
           ))
         )}
       </div>
+
+      {isMobile && (
+        <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            onClick={() => setFlagMode(!flagMode)}
+            style={{
+              padding: '8px 16px',
+              fontFamily: 'var(--font-chicago)',
+              fontSize: 12,
+              background: flagMode ? '#000' : '#fff',
+              color: flagMode ? '#fff' : '#000',
+              border: '1px solid #000',
+              boxShadow: '1px 1px 0 #000',
+            }}
+          >
+            {flagMode ? 'MODE: FLAG' : 'MODE: REVEAL'}
+          </button>
+          <span style={{ fontSize: 10, color: '#555' }}>
+            Tap to {flagMode ? 'flag' : 'reveal'}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

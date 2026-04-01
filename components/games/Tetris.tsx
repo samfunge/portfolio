@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '@/components/providers/AudioProvider';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const COLS    = 10;
 const ROWS    = 20;
@@ -191,6 +192,7 @@ export default function Tetris() {
   const wrapRef    = useRef<HTMLDivElement>(null);
   const posthog    = usePostHog();
   const { play }   = useAudio();
+  const isMobile   = useIsMobile();
 
   const [phase, setPhase] = useState<Phase>('idle');
   const phaseRef   = useRef<Phase>('idle');
@@ -273,6 +275,7 @@ export default function Tetris() {
 
   useEffect(() => {
     if (phase !== 'playing') { cancelAnimationFrame(rafRef.current); return; }
+    lastRef.current = performance.now();
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);
   }, [phase, loop]);
@@ -290,22 +293,25 @@ export default function Tetris() {
     spawnNext();
   }, [spawnNext]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (phaseRef.current === 'idle' || phaseRef.current === 'over') {
-      if (['Shift','Control','Alt','Meta','Tab'].includes(e.key)) return;
-      startGame();
-      return;
-    }
-    if (phaseRef.current !== 'playing') return;
-
+  const moveLeft = useCallback(() => {
     const p = pieceRef.current;
-    if (!p) return;
+    if (p && fits(boardRef.current, p.shape, p.x - 1, p.y)) {
+      pieceRef.current = { ...p, x: p.x - 1 };
+      redraw();
+    }
+  }, [redraw]);
 
-    if (['ArrowLeft','ArrowRight','ArrowDown','ArrowUp',' '].includes(e.key)) e.preventDefault();
+  const moveRight = useCallback(() => {
+    const p = pieceRef.current;
+    if (p && fits(boardRef.current, p.shape, p.x + 1, p.y)) {
+      pieceRef.current = { ...p, x: p.x + 1 };
+      redraw();
+    }
+  }, [redraw]);
 
-    if (e.key === 'ArrowLeft'  && fits(boardRef.current, p.shape, p.x - 1, p.y)) { pieceRef.current = { ...p, x: p.x - 1 }; redraw(); }
-    if (e.key === 'ArrowRight' && fits(boardRef.current, p.shape, p.x + 1, p.y)) { pieceRef.current = { ...p, x: p.x + 1 }; redraw(); }
-    if (e.key === 'ArrowDown') {
+  const moveDown = useCallback(() => {
+    const p = pieceRef.current;
+    if (p) {
       if (fits(boardRef.current, p.shape, p.x, p.y + 1)) {
         pieceRef.current = { ...p, y: p.y + 1 };
         scoreRef.current += 1;
@@ -315,7 +321,11 @@ export default function Tetris() {
         lockPiece();
       }
     }
-    if (e.key === 'ArrowUp' || e.key === 'x' || e.key === 'X') {
+  }, [lockPiece, redraw]);
+
+  const rotate = useCallback(() => {
+    const p = pieceRef.current;
+    if (p) {
       const rotated = rotatePiece(p.shape);
       if (fits(boardRef.current, rotated, p.x, p.y)) {
         pieceRef.current = { ...p, shape: rotated };
@@ -323,21 +333,51 @@ export default function Tetris() {
         redraw();
       }
     }
-    if (e.key === ' ') {
+  }, [play, redraw]);
+
+  const hardDrop = useCallback(() => {
+    const p = pieceRef.current;
+    if (p) {
       const gy = ghostY(boardRef.current, p);
       scoreRef.current += (gy - p.y) * 2;
       pieceRef.current = { ...p, y: gy };
       lockPiece();
       play('click');
+      redraw();
     }
+  }, [lockPiece, play, redraw]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (phaseRef.current === 'idle' || phaseRef.current === 'over') {
+      if (['Shift','Control','Alt','Meta','Tab'].includes(e.key)) return;
+      startGame();
+      return;
+    }
+    if (phaseRef.current !== 'playing') return;
+
+    if (['ArrowLeft','ArrowRight','ArrowDown','ArrowUp',' '].includes(e.key)) e.preventDefault();
+
+    if (e.key === 'ArrowLeft') moveLeft();
+    if (e.key === 'ArrowRight') moveRight();
+    if (e.key === 'ArrowDown') moveDown();
+    if (e.key === 'ArrowUp' || e.key === 'x' || e.key === 'X') rotate();
+    if (e.key === ' ') hardDrop();
+    
     forceRedraw(n => n + 1);
-  }, [startGame, lockPiece, play, redraw]);
+  }, [startGame, moveLeft, moveRight, moveDown, rotate, hardDrop]);
+
+  const handlePointerDown = useCallback(() => {
+    if (phaseRef.current === 'idle' || phaseRef.current === 'over') {
+      startGame();
+    }
+  }, [startGame]);
 
   return (
     <div
       ref={wrapRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
+      onPointerDown={handlePointerDown}
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', outline: 'none', userSelect: 'none', padding: 4 }}
       onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) e.currentTarget.focus({ preventScroll: true }); }}
     >
@@ -348,9 +388,31 @@ export default function Tetris() {
         style={{ border: '1px solid #000', imageRendering: 'pixelated', display: 'block' }}
         aria-label="Tetris game"
       />
-      <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>
-        Arrows: move/rotate  Space: drop
-      </div>
+      
+      {!isMobile ? (
+        <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>
+          Arrows: move/rotate  Space: drop
+        </div>
+      ) : (
+        <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: 'repeat(3, 40px)', gap: 8 }}>
+           <button style={btnStyle} onPointerDown={(e) => { e.stopPropagation(); rotate(); }}>ROT</button>
+           <button style={btnStyle} onPointerDown={(e) => { e.stopPropagation(); moveDown(); }}>DN</button>
+           <button style={btnStyle} onPointerDown={(e) => { e.stopPropagation(); hardDrop(); }}>DRP</button>
+           <button style={btnStyle} onPointerDown={(e) => { e.stopPropagation(); moveLeft(); }}>L</button>
+           <div />
+           <button style={btnStyle} onPointerDown={(e) => { e.stopPropagation(); moveRight(); }}>R</button>
+        </div>
+      )}
     </div>
   );
 }
+
+const btnStyle: React.CSSProperties = {
+  background: '#fff',
+  border: '1px solid #000',
+  fontFamily: 'var(--font-chicago)',
+  fontSize: 10,
+  padding: '8px 0',
+  cursor: 'pointer',
+  boxShadow: '1px 1px 0 #000',
+};

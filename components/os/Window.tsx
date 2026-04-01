@@ -195,6 +195,10 @@ function Window({ win, containerRef }: WindowProps) {
           aria-label="Close window"
           tabIndex={0}
           onKeyDown={(e) => e.key === 'Enter' && handleClose(e as unknown as React.MouseEvent)}
+          style={{
+            width: isMobile ? 20 : 12,
+            height: isMobile ? 20 : 12,
+          }}
         />
 
         {/* Title */}
