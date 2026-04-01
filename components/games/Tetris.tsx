@@ -13,25 +13,16 @@ const H       = ROWS * CELL;   // 280
 const SIDE_W  = 90;
 const CANVAS_W = W + SIDE_W;
 
-// Tetromino shapes [rotation][row][col]
 const PIECES: number[][][] = [
-  // I
   [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
-  // O
   [[1,1],[1,1]],
-  // T
   [[0,1,0],[1,1,1],[0,0,0]],
-  // S
   [[0,1,1],[1,1,0],[0,0,0]],
-  // Z
   [[1,1,0],[0,1,1],[0,0,0]],
-  // J
   [[1,0,0],[1,1,1],[0,0,0]],
-  // L
   [[0,0,1],[1,1,1],[0,0,0]],
 ];
 
-// 1-bit fills for each piece type
 const FILLS = ['#000','#000','#000','#444','#444','#666','#666'];
 
 function rotatePiece(p: number[][]): number[][] {
@@ -102,8 +93,6 @@ function drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
 function draw(ctx: CanvasRenderingContext2D, board: Board, piece: Piece | null, next: number, score: number, lines: number, level: number, phase: Phase) {
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, CANVAS_W, H);
-
-  // Board border
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 1;
   ctx.strokeRect(0, 0, W, H);
@@ -114,13 +103,10 @@ function draw(ctx: CanvasRenderingContext2D, board: Board, piece: Piece | null, 
     drawText(ctx, 'Press any key', W / 2, H / 2 + 4, 8, 'center');
     drawText(ctx, 'to start', W / 2, H / 2 + 18, 8, 'center');
   } else {
-    // Grid dots
     ctx.fillStyle = 'rgba(0,0,0,0.06)';
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
       if ((r + c) % 2 === 0) ctx.fillRect(c * CELL, r * CELL, 1, 1);
     }
-
-    // Placed cells
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const t = board[r][c];
@@ -129,32 +115,23 @@ function draw(ctx: CanvasRenderingContext2D, board: Board, piece: Piece | null, 
         ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
       }
     }
-
-    // Ghost piece
     if (piece) {
       const gy = ghostY(board, piece);
       ctx.fillStyle = 'rgba(0,0,0,0.15)';
       for (let r = 0; r < piece.shape.length; r++) {
         for (let c = 0; c < piece.shape[r].length; c++) {
-          if (piece.shape[r][c]) {
-            ctx.fillRect((piece.x + c) * CELL + 1, (gy + r) * CELL + 1, CELL - 2, CELL - 2);
-          }
+          if (piece.shape[r][c]) ctx.fillRect((piece.x + c) * CELL + 1, (gy + r) * CELL + 1, CELL - 2, CELL - 2);
         }
       }
-
-      // Active piece
       ctx.fillStyle = FILLS[piece.type];
       for (let r = 0; r < piece.shape.length; r++) {
         for (let c = 0; c < piece.shape[r].length; c++) {
-          if (piece.shape[r][c]) {
-            ctx.fillRect((piece.x + c) * CELL + 1, (piece.y + r) * CELL + 1, CELL - 2, CELL - 2);
-          }
+          if (piece.shape[r][c]) ctx.fillRect((piece.x + c) * CELL + 1, (piece.y + r) * CELL + 1, CELL - 2, CELL - 2);
         }
       }
     }
   }
 
-  // Side panel
   const sx = W + 6;
   ctx.fillStyle = '#000';
   drawText(ctx, 'SCORE', sx, 16, 8);
@@ -163,8 +140,6 @@ function draw(ctx: CanvasRenderingContext2D, board: Board, piece: Piece | null, 
   drawText(ctx, String(lines), sx, 66, 8);
   drawText(ctx, 'LEVEL', sx, 88, 8);
   drawText(ctx, String(level), sx, 102, 8);
-
-  // Next piece preview
   drawText(ctx, 'NEXT', sx, 126, 8);
   if (phase === 'playing') {
     const shape = PIECES[next];
@@ -176,7 +151,6 @@ function draw(ctx: CanvasRenderingContext2D, board: Board, piece: Piece | null, 
       }
     }
   }
-
   if (phase === 'over') {
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
     ctx.fillRect(0, 0, W, H);
@@ -204,12 +178,6 @@ export default function Tetris() {
   const levelRef   = useRef(1);
   const rafRef     = useRef<number>(0);
   const lastTickRef = useRef<number>(0);
-
-  useEffect(() => {
-    nextRef.current = Math.floor(Math.random() * PIECES.length);
-  }, []);
-
-  const [, forceRedraw] = useState(0);
 
   const redraw = useCallback(() => {
     const ctx = canvasRef.current?.getContext('2d');
@@ -246,39 +214,42 @@ export default function Tetris() {
     spawnNext();
   }, [play, spawnNext]);
 
-  const loop = useCallback((ts: number) => {
-    if (phaseRef.current !== 'playing') return;
-    const interval = Math.max(100, 700 - (levelRef.current - 1) * 60);
-    if (ts - lastTickRef.current >= interval) {
-      lastTickRef.current = ts;
-      const p = pieceRef.current;
-      if (p) {
-        if (fits(boardRef.current, p.shape, p.x, p.y + 1)) {
-          pieceRef.current = { ...p, y: p.y + 1 };
-        } else {
-          lockPiece();
+  const tickRef = useRef<(ts: number) => void>(() => {});
+
+  useEffect(() => {
+    tickRef.current = (ts: number) => {
+      if (phaseRef.current !== 'playing') return;
+      rafRef.current = requestAnimationFrame(tickRef.current);
+      if (document.visibilityState === 'hidden') return;
+      const interval = Math.max(100, 700 - (levelRef.current - 1) * 60);
+      if (ts - lastTickRef.current >= interval) {
+        lastTickRef.current = ts;
+        const p = pieceRef.current;
+        if (p) {
+          if (fits(boardRef.current, p.shape, p.x, p.y + 1)) {
+            pieceRef.current = { ...p, y: p.y + 1 };
+          } else {
+            lockPiece();
+          }
         }
       }
-    }
-    redraw();
+      redraw();
+    };
   }, [lockPiece, redraw]);
 
-  // Lifecycle
   useEffect(() => {
+    nextRef.current = Math.floor(Math.random() * PIECES.length);
     redraw();
     wrapRef.current?.focus();
   }, [redraw]);
 
-  // Game loop trigger
   useEffect(() => {
-    if (phase !== 'playing') {
-      cancelAnimationFrame(rafRef.current);
-      return;
+    if (phase === 'playing') {
+      lastTickRef.current = performance.now();
+      rafRef.current = requestAnimationFrame(tickRef.current);
+      return () => cancelAnimationFrame(rafRef.current);
     }
-    lastTickRef.current = performance.now();
-    rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [phase, loop]);
+  }, [phase]);
 
   const startGame = useCallback(() => {
     boardRef.current = emptyBoard();
@@ -295,31 +266,19 @@ export default function Tetris() {
 
   const moveLeft = useCallback(() => {
     const p = pieceRef.current;
-    if (p && fits(boardRef.current, p.shape, p.x - 1, p.y)) {
-      pieceRef.current = { ...p, x: p.x - 1 };
-      redraw();
-    }
+    if (p && fits(boardRef.current, p.shape, p.x - 1, p.y)) { pieceRef.current = { ...p, x: p.x - 1 }; redraw(); }
   }, [redraw]);
 
   const moveRight = useCallback(() => {
     const p = pieceRef.current;
-    if (p && fits(boardRef.current, p.shape, p.x + 1, p.y)) {
-      pieceRef.current = { ...p, x: p.x + 1 };
-      redraw();
-    }
+    if (p && fits(boardRef.current, p.shape, p.x + 1, p.y)) { pieceRef.current = { ...p, x: p.x + 1 }; redraw(); }
   }, [redraw]);
 
   const moveDown = useCallback(() => {
     const p = pieceRef.current;
     if (p) {
-      if (fits(boardRef.current, p.shape, p.x, p.y + 1)) {
-        pieceRef.current = { ...p, y: p.y + 1 };
-        scoreRef.current += 1;
-        lastTickRef.current = performance.now();
-        redraw();
-      } else {
-        lockPiece();
-      }
+      if (fits(boardRef.current, p.shape, p.x, p.y + 1)) { pieceRef.current = { ...p, y: p.y + 1 }; scoreRef.current += 1; lastTickRef.current = performance.now(); redraw(); }
+      else { lockPiece(); }
     }
   }, [lockPiece, redraw]);
 
@@ -327,11 +286,7 @@ export default function Tetris() {
     const p = pieceRef.current;
     if (p) {
       const rotated = rotatePiece(p.shape);
-      if (fits(boardRef.current, rotated, p.x, p.y)) {
-        pieceRef.current = { ...p, shape: rotated };
-        play('click');
-        redraw();
-      }
+      if (fits(boardRef.current, rotated, p.x, p.y)) { pieceRef.current = { ...p, shape: rotated }; play('click'); redraw(); }
     }
   }, [play, redraw]);
 
@@ -348,51 +303,21 @@ export default function Tetris() {
   }, [lockPiece, play, redraw]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (phaseRef.current === 'idle' || phaseRef.current === 'over') {
-      if (['Shift','Control','Alt','Meta','Tab'].includes(e.key)) return;
-      startGame();
-      return;
-    }
+    if (phaseRef.current === 'idle' || phaseRef.current === 'over') { if (!['Shift','Control','Alt','Meta','Tab'].includes(e.key)) startGame(); return; }
     if (phaseRef.current !== 'playing') return;
-
     if (['ArrowLeft','ArrowRight','ArrowDown','ArrowUp',' '].includes(e.key)) e.preventDefault();
-
     if (e.key === 'ArrowLeft') moveLeft();
     if (e.key === 'ArrowRight') moveRight();
     if (e.key === 'ArrowDown') moveDown();
     if (e.key === 'ArrowUp' || e.key === 'x' || e.key === 'X') rotate();
     if (e.key === ' ') hardDrop();
-    
-    forceRedraw(n => n + 1);
   }, [startGame, moveLeft, moveRight, moveDown, rotate, hardDrop]);
 
-  const handlePointerDown = useCallback(() => {
-    if (phaseRef.current === 'idle' || phaseRef.current === 'over') {
-      startGame();
-    }
-  }, [startGame]);
-
   return (
-    <div
-      ref={wrapRef}
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-      onPointerDown={handlePointerDown}
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', outline: 'none', userSelect: 'none', padding: 4 }}
-      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) e.currentTarget.focus({ preventScroll: true }); }}
-    >
-      <canvas
-        ref={canvasRef}
-        width={CANVAS_W}
-        height={H}
-        style={{ border: '1px solid #000', imageRendering: 'pixelated', display: 'block' }}
-        aria-label="Tetris game"
-      />
-      
+    <div ref={wrapRef} tabIndex={0} onKeyDown={handleKeyDown} onPointerDown={() => { if (phaseRef.current === 'idle' || phaseRef.current === 'over') startGame(); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', outline: 'none', userSelect: 'none', padding: 4 }} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) e.currentTarget.focus({ preventScroll: true }); }}>
+      <canvas ref={canvasRef} width={CANVAS_W} height={H} style={{ border: '1px solid #000', imageRendering: 'pixelated', display: 'block' }} aria-label="Tetris game" />
       {!isMobile ? (
-        <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>
-          Arrows: move/rotate  Space: drop
-        </div>
+        <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>Arrows: move/rotate  Space: drop</div>
       ) : (
         <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: 'repeat(3, 40px)', gap: 8 }}>
            <button style={btnStyle} onPointerDown={(e) => { e.stopPropagation(); rotate(); }}>ROT</button>
@@ -407,12 +332,4 @@ export default function Tetris() {
   );
 }
 
-const btnStyle: React.CSSProperties = {
-  background: '#fff',
-  border: '1px solid #000',
-  fontFamily: 'var(--font-chicago)',
-  fontSize: 10,
-  padding: '8px 0',
-  cursor: 'pointer',
-  boxShadow: '1px 1px 0 #000',
-};
+const btnStyle: React.CSSProperties = { background: '#fff', border: '1px solid #000', fontFamily: 'var(--font-chicago)', fontSize: 10, padding: '8px 0', cursor: 'pointer', boxShadow: '1px 1px 0 #000' };

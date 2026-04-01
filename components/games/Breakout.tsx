@@ -50,7 +50,6 @@ function drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
   ctx.fillText(text, x, y);
 }
 
-// 1-bit fill patterns for brick rows (top to bottom: densest to lightest)
 const BRICK_FILLS = ['#000', '#000', '#333', '#666', '#999'];
 
 function draw(ctx: CanvasRenderingContext2D, s: GameState, phase: Phase) {
@@ -64,8 +63,6 @@ function draw(ctx: CanvasRenderingContext2D, s: GameState, phase: Phase) {
     drawText(ctx, 'Arrow keys or mouse', W / 2, H / 2 + 20, 7);
     return;
   }
-
-  // Bricks
   for (const b of s.bricks) {
     if (!b.alive) continue;
     const bx = b.col * BRICK_W;
@@ -76,17 +73,11 @@ function draw(ctx: CanvasRenderingContext2D, s: GameState, phase: Phase) {
     ctx.lineWidth = 1;
     ctx.strokeRect(bx + 1, by + 1, BRICK_W - 2, BRICK_H - 2);
   }
-
-  // Paddle
   ctx.fillStyle = '#000';
   ctx.fillRect(s.padX, PAD_Y, PAD_W, PAD_H);
-
-  // Ball
   ctx.beginPath();
   ctx.arc(s.ball.x, s.ball.y, BALL_R, 0, Math.PI * 2);
   ctx.fill();
-
-  // HUD
   ctx.fillStyle = '#000';
   drawText(ctx, `SCORE ${s.score}`, 4, 11, 8, 'left');
   drawText(ctx, `${'♥ '.repeat(s.lives).trim()}`, W - 4, 11, 8, 'right');
@@ -135,124 +126,92 @@ export default function Breakout() {
     redraw();
   }, [posthog, redraw]);
 
-  const loop = useCallback((ts: number) => {
-    if (phaseRef.current !== 'playing') return;
-    const dt = Math.min(ts - lastRef.current, 32);
-    lastRef.current = ts;
+  const tickRef = useRef<(ts: number) => void>(() => {});
 
-    const s = stateRef.current;
-    const speed = dt / 16;
+  useEffect(() => {
+    tickRef.current = (ts: number) => {
+      if (phaseRef.current !== 'playing') return;
+      rafRef.current = requestAnimationFrame(tickRef.current);
+      if (document.visibilityState === 'hidden') return;
 
-    // Keyboard paddle control
-    if (keysRef.current.has('ArrowLeft')  || keysRef.current.has('a') || keysRef.current.has('A')) {
-      s.padX = Math.max(0, s.padX - 4.5 * speed);
-    }
-    if (keysRef.current.has('ArrowRight') || keysRef.current.has('d') || keysRef.current.has('D')) {
-      s.padX = Math.min(W - PAD_W, s.padX + 4.5 * speed);
-    }
-
-    // Move ball
-    s.ball.x += s.ball.vx * speed;
-    s.ball.y += s.ball.vy * speed;
-
-    // Wall bounces
-    if (s.ball.x - BALL_R <= 0)  { s.ball.x = BALL_R;      s.ball.vx =  Math.abs(s.ball.vx); }
-    if (s.ball.x + BALL_R >= W)  { s.ball.x = W - BALL_R;  s.ball.vx = -Math.abs(s.ball.vx); }
-    if (s.ball.y - BALL_R <= 0)  { s.ball.y = BALL_R;      s.ball.vy =  Math.abs(s.ball.vy); }
-
-    // Paddle bounce
-    if (
-      s.ball.vy > 0 &&
-      s.ball.y + BALL_R >= PAD_Y &&
-      s.ball.y + BALL_R <= PAD_Y + PAD_H + 4 &&
-      s.ball.x >= s.padX - BALL_R &&
-      s.ball.x <= s.padX + PAD_W + BALL_R
-    ) {
-      s.ball.y = PAD_Y - BALL_R;
-      const rel = (s.ball.x - (s.padX + PAD_W / 2)) / (PAD_W / 2);
-      const angle = rel * 60 * (Math.PI / 180);
-      const speed2 = Math.sqrt(s.ball.vx ** 2 + s.ball.vy ** 2);
-      s.ball.vx = Math.sin(angle) * speed2;
-      s.ball.vy = -Math.cos(angle) * speed2;
-      play('click');
-    }
-
-    // Ball lost
-    if (s.ball.y - BALL_R > H) {
-      s.lives--;
-      play('crunch');
-      if (s.lives <= 0) { endGame(false); return; }
-      s.ball = { x: W / 2, y: H / 2, vx: 2.6, vy: -3.0 };
-    }
-
-    // Brick collisions
-    let aliveBricks = 0;
-    for (const b of s.bricks) {
-      if (!b.alive) continue;
-      aliveBricks++;
-      const bx = b.col * BRICK_W + 1;
-      const by = 24 + b.row * (BRICK_H + 2) + 1;
-      const bw = BRICK_W - 2;
-      const bh = BRICK_H - 2;
-
-      if (
-        s.ball.x + BALL_R > bx && s.ball.x - BALL_R < bx + bw &&
-        s.ball.y + BALL_R > by && s.ball.y - BALL_R < by + bh
-      ) {
-        // eslint-disable-next-line react-hooks/immutability
-        b.alive = false;
-        aliveBricks--;
-        s.score += (BRICK_ROWS - b.row) * 10;
-        play('click');
-
-        // Determine bounce axis
-        const overlapL = (s.ball.x + BALL_R) - bx;
-        const overlapR = (bx + bw) - (s.ball.x - BALL_R);
-        const overlapT = (s.ball.y + BALL_R) - by;
-        const overlapB = (by + bh) - (s.ball.y - BALL_R);
-        const minH = Math.min(overlapL, overlapR);
-        const minV = Math.min(overlapT, overlapB);
-        if (minH < minV) s.ball.vx = -s.ball.vx;
-        else             s.ball.vy = -s.ball.vy;
-        break;
+      const dt = Math.min(ts - lastRef.current, 32);
+      lastRef.current = ts;
+      const s = stateRef.current;
+      const speed = dt / 16;
+      if (keysRef.current.has('ArrowLeft')  || keysRef.current.has('a') || keysRef.current.has('A')) {
+        s.padX = Math.max(0, s.padX - 4.5 * speed);
       }
-    }
-
-    if (aliveBricks === 0) { endGame(true); return; }
-
-    redraw();
+      if (keysRef.current.has('ArrowRight') || keysRef.current.has('d') || keysRef.current.has('D')) {
+        s.padX = Math.min(W - PAD_W, s.padX + 4.5 * speed);
+      }
+      s.ball.x += s.ball.vx * speed;
+      s.ball.y += s.ball.vy * speed;
+      if (s.ball.x - BALL_R <= 0)  { s.ball.x = BALL_R;      s.ball.vx =  Math.abs(s.ball.vx); }
+      if (s.ball.x + BALL_R >= W)  { s.ball.x = W - BALL_R;  s.ball.vx = -Math.abs(s.ball.vx); }
+      if (s.ball.y - BALL_R <= 0)  { s.ball.y = BALL_R;      s.ball.vy =  Math.abs(s.ball.vy); }
+      if (s.ball.vy > 0 && s.ball.y + BALL_R >= PAD_Y && s.ball.y + BALL_R <= PAD_Y + PAD_H + 4 && s.ball.x >= s.padX - BALL_R && s.ball.x <= s.padX + PAD_W + BALL_R) {
+        s.ball.y = PAD_Y - BALL_R;
+        const rel = (s.ball.x - (s.padX + PAD_W / 2)) / (PAD_W / 2);
+        const angle = rel * 60 * (Math.PI / 180);
+        const speed2 = Math.sqrt(s.ball.vx ** 2 + s.ball.vy ** 2);
+        s.ball.vx = Math.sin(angle) * speed2;
+        s.ball.vy = -Math.cos(angle) * speed2;
+        play('click');
+      }
+      if (s.ball.y - BALL_R > H) {
+        s.lives--;
+        play('crunch');
+        if (s.lives <= 0) { endGame(false); return; }
+        s.ball = { x: W / 2, y: H / 2, vx: 2.6, vy: -3.0 };
+      }
+      let aliveCount = 0;
+      for (let i = 0; i < s.bricks.length; i++) {
+        const b = s.bricks[i];
+        if (!b.alive) continue;
+        aliveCount++;
+        const bx = b.col * BRICK_W + 1;
+        const by = 24 + b.row * (BRICK_H + 2) + 1;
+        const bw = BRICK_W - 2;
+        const bh = BRICK_H - 2;
+        if (s.ball.x + BALL_R > bx && s.ball.x - BALL_R < bx + bw && s.ball.y + BALL_R > by && s.ball.y - BALL_R < by + bh) {
+          s.bricks[i] = { ...b, alive: false };
+          aliveCount--;
+          s.score += (BRICK_ROWS - b.row) * 10;
+          play('click');
+          const overlapL = (s.ball.x + BALL_R) - bx;
+          const overlapR = (bx + bw) - (s.ball.x - BALL_R);
+          const overlapT = (s.ball.y + BALL_R) - by;
+          const overlapB = (by + bh) - (s.ball.y - BALL_R);
+          const minH = Math.min(overlapL, overlapR);
+          const minV = Math.min(overlapT, overlapB);
+          if (minH < minV) s.ball.vx = -s.ball.vx; else s.ball.vy = -s.ball.vy;
+          break;
+        }
+      }
+      if (aliveCount === 0) { endGame(true); return; }
+      redraw();
+    };
   }, [play, endGame, redraw]);
 
-  // Lifecycle
-  useEffect(() => {
-    redraw();
-    wrapRef.current?.focus();
-  }, [redraw]);
+  useEffect(() => { redraw(); wrapRef.current?.focus(); }, [redraw]);
 
-  // Game loop trigger
   useEffect(() => {
-    if (phase !== 'playing') {
-      cancelAnimationFrame(rafRef.current);
-      return;
+    if (phase === 'playing') {
+      lastRef.current = performance.now();
+      rafRef.current = requestAnimationFrame(tickRef.current);
+      return () => cancelAnimationFrame(rafRef.current);
     }
-    lastRef.current = performance.now();
-    rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [phase, loop]);
+  }, [phase]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     keysRef.current.add(e.key);
     if (phaseRef.current === 'idle' || phaseRef.current === 'over' || phaseRef.current === 'win') {
-      if (['Shift','Control','Alt','Meta','Tab'].includes(e.key)) return;
-      startGame();
+      if (!['Shift','Control','Alt','Meta','Tab'].includes(e.key)) startGame();
     }
     if (['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
   }, [startGame]);
 
-  const handleKeyUp = useCallback((e: React.KeyboardEvent) => {
-    keysRef.current.delete(e.key);
-  }, []);
-
+  const handleKeyUp = useCallback((e: React.KeyboardEvent) => { keysRef.current.delete(e.key); }, []);
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (phaseRef.current !== 'playing') return;
     const rect = canvasRef.current!.getBoundingClientRect();
@@ -261,10 +220,7 @@ export default function Breakout() {
   }, []);
 
   const handleTouch = useCallback((e: React.TouchEvent) => {
-    if (phaseRef.current !== 'playing') {
-      startGame();
-      return;
-    }
+    if (phaseRef.current !== 'playing') { startGame(); return; }
     const rect = canvasRef.current!.getBoundingClientRect();
     const mx = e.touches[0].clientX - rect.left;
     stateRef.current.padX = Math.max(0, Math.min(W - PAD_W, mx - PAD_W / 2));
@@ -279,24 +235,11 @@ export default function Breakout() {
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', outline: 'none', userSelect: 'none', padding: 4 }}
       onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) e.currentTarget.focus({ preventScroll: true }); }}
     >
-      <canvas
-        ref={canvasRef}
-        width={W}
-        height={H}
-        onMouseMove={handleMouseMove}
-        onTouchMove={handleTouch}
-        onTouchStart={handleTouch}
-        style={{ border: '1px solid #000', imageRendering: 'pixelated', display: 'block', cursor: 'none', touchAction: 'none' }}
-        aria-label="Breakout game"
-      />
+      <canvas ref={canvasRef} width={W} height={H} onMouseMove={handleMouseMove} onTouchMove={handleTouch} onTouchStart={handleTouch} style={{ border: '1px solid #000', imageRendering: 'pixelated', display: 'block', cursor: 'none', touchAction: 'none' }} aria-label="Breakout game" />
       {!isMobile ? (
-        <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>
-          Arrow keys or mouse to move
-        </div>
+        <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>Arrow keys or mouse to move</div>
       ) : (
-        <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>
-          Drag to move paddle
-        </div>
+        <div style={{ marginTop: 4, fontFamily: 'var(--font-chicago)', fontSize: 8, color: '#555' }}>Drag to move paddle</div>
       )}
     </div>
   );

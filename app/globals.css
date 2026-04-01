@@ -69,6 +69,7 @@ html, body {
   pointer-events: none;
   z-index: 9999;
   border-radius: 2% / 1.5%;
+  transform: translateZ(0); /* Force GPU layer */
   background-image:
     repeating-linear-gradient(
       to bottom,
@@ -103,6 +104,7 @@ html, body {
   pointer-events: none;
   z-index: 1;
   mix-blend-mode: screen;
+  transform: translateZ(0); /* Force GPU layer */
   box-shadow:
     inset 2px 0 0 0 rgba(255, 0,   0,   0.03),
     inset -2px 0 0 0 rgba(0,   0,   255, 0.03);
@@ -141,6 +143,7 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  will-change: transform, width, height;
 }
 
 .mac-titlebar {
