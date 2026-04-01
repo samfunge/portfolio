@@ -13,7 +13,7 @@ test('can open games folder and launch snake', async ({ page }) => {
   await expect(page.locator('.mac-titlebar-title')).toContainText('Games');
 
   // Launch snake
-  await page.getByLabel('Snake').dblclick();
+  await page.getByRole('button', { name: 'Snake' }).dblclick();
 
   // Snake window should appear
   await expect(page.locator('.mac-titlebar-title').filter({ hasText: 'Snake' })).toBeVisible();
@@ -27,18 +27,22 @@ test('can open games folder and launch snake', async ({ page }) => {
 });
 
 test('can launch minesweeper and reveal a cell', async ({ page }) => {
+  // Open games folder
   await page.getByText('Games', { exact: true }).dblclick();
-  await page.getByLabel('Minesweeper').dblclick();
+  
+  // Double click Minesweeper icon
+  await page.getByRole('button', { name: 'Minesweeper' }).dblclick();
 
-  await expect(page.locator('.mac-titlebar-title').filter({ hasText: 'Minesweeper' })).toBeVisible();
+  // Minesweeper window should appear
+  const msWindow = page.locator('.mac-window').filter({ hasText: 'Minesweeper' });
+  await expect(msWindow).toBeVisible();
 
-  // Grid should be there
-  const cells = page.locator('div[onClick]'); // Minesweeper cells have onClick
-  await expect(cells).toHaveCount(100); // 10x10
+  // The grid cells in Minesweeper are divs inside the window body
+  const cells = msWindow.getByRole('gridcell');
+  
+  // Wait for the grid to be populated
+  await expect(cells).toHaveCount(100, { timeout: 5000 });
 
   // Click first cell
   await cells.first().click();
-
-  // Check that at least one cell is revealed (background color changes or value shows)
-  // We can't be sure what it reveals but the first cell click should play sound/floodfill
 });

@@ -25,8 +25,7 @@ test('opening a window from the desktop', async ({ page }) => {
   await expect(page.locator('.mac-desktop')).toBeVisible({ timeout: 15000 });
 
   // Double click About.txt icon
-  // Note: desktop icons use double click to open windows in useDesktopStore logic via DesktopIcon
-  await page.getByText('About.txt').dblclick();
+  await page.getByRole('button', { name: 'About.txt' }).dblclick();
 
   // Expect window to appear
   await expect(page.locator('.mac-window')).toBeVisible();

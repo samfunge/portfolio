@@ -229,6 +229,8 @@ export default function Minesweeper() {
               key={`${r}-${c}`}
               onClick={() => revealCell(r, c)}
               onContextMenu={(e) => toggleFlag(e, r, c)}
+              role="gridcell"
+              aria-label={`Cell ${r}-${c}`}
               style={{
                 width: CELL_SIZE,
                 height: CELL_SIZE,
