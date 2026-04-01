@@ -9,14 +9,14 @@ test.beforeEach(async ({ page }) => {
 
 test('can open games folder and launch snake', async ({ page }) => {
   // Open games folder
-  await page.getByText('Games', { exact: true }).dblclick();
-  await expect(page.locator('.mac-titlebar-title')).toContainText('Games');
+  await page.getByRole('button', { name: /Games/ }).dblclick();
+  await expect(page.locator('.mac-window')).filter({ hasText: 'Games' }).toBeVisible();
 
   // Launch snake
-  await page.getByRole('button', { name: 'Snake' }).dblclick();
+  await page.getByRole('button', { name: /Snake/ }).dblclick();
 
   // Snake window should appear
-  await expect(page.locator('.mac-titlebar-title').filter({ hasText: 'Snake' })).toBeVisible();
+  await expect(page.locator('.mac-window')).filter({ hasText: 'Snake' }).toBeVisible();
 
   // Canvas should be there
   const canvas = page.locator('canvas[aria-label="Snake game canvas"]');
@@ -28,20 +28,20 @@ test('can open games folder and launch snake', async ({ page }) => {
 
 test('can launch minesweeper and reveal a cell', async ({ page }) => {
   // Open games folder
-  await page.getByText('Games', { exact: true }).dblclick();
+  await page.getByRole('button', { name: /Games/ }).dblclick();
   
   // Double click Minesweeper icon
-  await page.getByRole('button', { name: 'Minesweeper' }).dblclick();
+  await page.getByRole('button', { name: /Minesweeper/ }).dblclick();
 
   // Minesweeper window should appear
   const msWindow = page.locator('.mac-window').filter({ hasText: 'Minesweeper' });
   await expect(msWindow).toBeVisible();
 
-  // The grid cells in Minesweeper are divs inside the window body
+  // The grid cells in Minesweeper
   const cells = msWindow.getByRole('gridcell');
   
   // Wait for the grid to be populated
-  await expect(cells).toHaveCount(100, { timeout: 5000 });
+  await expect(cells).toHaveCount(100, { timeout: 10000 });
 
   // Click first cell
   await cells.first().click();

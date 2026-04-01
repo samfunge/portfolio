@@ -24,8 +24,8 @@ test('opening a window from the desktop', async ({ page }) => {
   await page.locator('.boot-screen').click();
   await expect(page.locator('.mac-desktop')).toBeVisible({ timeout: 15000 });
 
-  // Double click About.txt icon
-  await page.getByRole('button', { name: 'About.txt' }).dblclick();
+  // Use a regex to match the label within the button role
+  await page.getByRole('button', { name: /About\.txt/ }).dblclick();
 
   // Expect window to appear
   await expect(page.locator('.mac-window')).toBeVisible();
