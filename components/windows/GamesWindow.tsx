@@ -6,7 +6,11 @@ import { usePostHog } from 'posthog-js/react';
 import { GamesIcon } from '@/components/os/MacIcons';
 
 const GAMES = [
-  { id: 'snake' as const, label: 'Snake',  description: 'Classic snake. Arrow keys to move.' },
+  { id: 'snake'       as const, label: 'Snake',       description: 'Arrow keys to move.' },
+  { id: 'pong'        as const, label: 'Pong',         description: 'W/S to move paddle.' },
+  { id: 'breakout'    as const, label: 'Breakout',     description: 'Arrow keys or mouse.' },
+  { id: 'tetris'      as const, label: 'Tetris',       description: 'Arrow keys to play.' },
+  { id: 'minesweeper' as const, label: 'Minesweeper',  description: 'Click to reveal.' },
 ] as const;
 
 /**
@@ -39,7 +43,7 @@ export default function GamesWindow() {
         }}
       >
         <GamesIcon size={16} />
-        <span>{GAMES.length} item{GAMES.length !== 1 ? 's' : ''}</span>
+        <span>{(GAMES.length as number)} item{(GAMES.length as number) !== 1 ? 's' : ''}</span>
       </div>
 
       {/* Game icons */}

@@ -7,10 +7,11 @@
 interface IconProps {
   size?: number;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 // ─── Happy Mac (boot screen + about window) ───────────────────────────────────
-export function HappyMacIcon({ size = 64, className }: IconProps) {
+export function HappyMacIcon({ size = 64, className, style }: IconProps) {
   return (
     <svg
       width={size}
@@ -19,7 +20,7 @@ export function HappyMacIcon({ size = 64, className }: IconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      style={{ imageRendering: 'pixelated' }}
+      style={{ imageRendering: 'pixelated', ...style }}
     >
       {/* Monitor outer shell */}
       <rect x="2" y="1" width="28" height="24" rx="2" fill="#000" />
@@ -54,7 +55,7 @@ export function HappyMacIcon({ size = 64, className }: IconProps) {
 }
 
 // ─── Sad Mac (error / trash content) ─────────────────────────────────────────
-export function SadMacIcon({ size = 64, className }: IconProps) {
+export function SadMacIcon({ size = 64, className, style }: IconProps) {
   return (
     <svg
       width={size}
@@ -63,7 +64,7 @@ export function SadMacIcon({ size = 64, className }: IconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      style={{ imageRendering: 'pixelated' }}
+      style={{ imageRendering: 'pixelated', ...style }}
     >
       <rect x="2" y="1" width="28" height="24" rx="2" fill="#000" />
       <rect x="3" y="2" width="26" height="22" rx="1" fill="#fff" />
@@ -92,7 +93,7 @@ export function SadMacIcon({ size = 64, className }: IconProps) {
 }
 
 // ─── Folder ───────────────────────────────────────────────────────────────────
-export function FolderIcon({ size = 48, className }: IconProps) {
+export function FolderIcon({ size = 48, className, style }: IconProps) {
   return (
     <svg
       width={size}
@@ -101,7 +102,7 @@ export function FolderIcon({ size = 48, className }: IconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      style={{ imageRendering: 'pixelated' }}
+      style={{ imageRendering: 'pixelated', ...style }}
     >
       {/* Folder back */}
       <rect x="1" y="8"  width="30" height="20" fill="#000" />
@@ -119,7 +120,7 @@ export function FolderIcon({ size = 48, className }: IconProps) {
 }
 
 // ─── Document / text file ─────────────────────────────────────────────────────
-export function FileTextIcon({ size = 48, className }: IconProps) {
+export function FileTextIcon({ size = 48, className, style }: IconProps) {
   return (
     <svg
       width={size}
@@ -128,7 +129,7 @@ export function FileTextIcon({ size = 48, className }: IconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      style={{ imageRendering: 'pixelated' }}
+      style={{ imageRendering: 'pixelated', ...style }}
     >
       {/* Page outline */}
       <rect x="4"  y="1"  width="20" height="30" fill="#000" />
@@ -151,7 +152,7 @@ export function FileTextIcon({ size = 48, className }: IconProps) {
 }
 
 // ─── PDF file ─────────────────────────────────────────────────────────────────
-export function FilePdfIcon({ size = 48, className }: IconProps) {
+export function FilePdfIcon({ size = 48, className, style }: IconProps) {
   return (
     <svg
       width={size}
@@ -160,7 +161,7 @@ export function FilePdfIcon({ size = 48, className }: IconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      style={{ imageRendering: 'pixelated' }}
+      style={{ imageRendering: 'pixelated', ...style }}
     >
       {/* Same page shape */}
       <rect x="4"  y="1"  width="20" height="30" fill="#000" />
@@ -194,7 +195,7 @@ export function FilePdfIcon({ size = 48, className }: IconProps) {
 }
 
 // ─── Games folder (with joystick hint) ───────────────────────────────────────
-export function GamesIcon({ size = 48, className }: IconProps) {
+export function GamesIcon({ size = 48, className, style }: IconProps) {
   return (
     <svg
       width={size}
@@ -203,7 +204,7 @@ export function GamesIcon({ size = 48, className }: IconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      style={{ imageRendering: 'pixelated' }}
+      style={{ imageRendering: 'pixelated', ...style }}
     >
       {/* Folder base */}
       <rect x="1"  y="8"  width="30" height="20" fill="#000" />
@@ -224,7 +225,7 @@ export function GamesIcon({ size = 48, className }: IconProps) {
 }
 
 // ─── Trash can ────────────────────────────────────────────────────────────────
-export function TrashIcon({ size = 48, className, full = false }: IconProps & { full?: boolean }) {
+export function TrashIcon({ size = 48, className, style, full = false }: IconProps & { full?: boolean }) {
   return (
     <svg
       width={size}
@@ -233,7 +234,7 @@ export function TrashIcon({ size = 48, className, full = false }: IconProps & { 
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      style={{ imageRendering: 'pixelated' }}
+      style={{ imageRendering: 'pixelated', ...style }}
     >
       {/* Lid */}
       <rect x="6"  y="4"  width="20" height="2"  fill="#000" />
@@ -263,7 +264,7 @@ export function TrashIcon({ size = 48, className, full = false }: IconProps & { 
 }
 
 // ─── Apple logo (menu bar) ────────────────────────────────────────────────────
-export function AppleIcon({ size = 16, className }: IconProps) {
+export function AppleIcon({ size = 16, className, style }: IconProps) {
   return (
     <svg
       width={size}
@@ -272,7 +273,7 @@ export function AppleIcon({ size = 16, className }: IconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      style={{ imageRendering: 'pixelated' }}
+      style={{ imageRendering: 'pixelated', ...style }}
     >
       {/* Stylised apple silhouette */}
       <path
@@ -288,7 +289,7 @@ export function AppleIcon({ size = 16, className }: IconProps) {
 }
 
 // ─── Speaker / audio toggle ───────────────────────────────────────────────────
-export function SpeakerOnIcon({ size = 14, className }: IconProps) {
+export function SpeakerOnIcon({ size = 14, className, style }: IconProps) {
   return (
     <svg
       width={size}
@@ -297,16 +298,19 @@ export function SpeakerOnIcon({ size = 14, className }: IconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      style={{ imageRendering: 'pixelated', ...style }}
     >
       <rect x="1" y="4" width="3" height="6" fill="#000" />
       <polygon points="4,4 4,10 9,12 9,2" fill="#000" />
-      <path d="M10 4 Q13 7 10 10" stroke="#000" strokeWidth="1.5" fill="none" />
-      <path d="M11 2 Q15 7 11 12" stroke="#000" strokeWidth="1.5" fill="none" />
+      {/* Wave 1 */}
+      <rect x="11" y="5" width="1" height="4" fill="#000" />
+      {/* Wave 2 */}
+      <rect x="13" y="3" width="1" height="8" fill="#000" />
     </svg>
   );
 }
 
-export function SpeakerOffIcon({ size = 14, className }: IconProps) {
+export function SpeakerOffIcon({ size = 14, className, style }: IconProps) {
   return (
     <svg
       width={size}
@@ -315,11 +319,16 @@ export function SpeakerOffIcon({ size = 14, className }: IconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      style={{ imageRendering: 'pixelated', ...style }}
     >
       <rect x="1" y="4" width="3" height="6" fill="#000" />
       <polygon points="4,4 4,10 9,12 9,2" fill="#000" />
-      <line x1="11" y1="4" x2="14" y2="10" stroke="#000" strokeWidth="1.5" />
-      <line x1="14" y1="4" x2="11" y2="10" stroke="#000" strokeWidth="1.5" />
+      {/* X for off */}
+      <rect x="11" y="5" width="1" height="1" fill="#000" />
+      <rect x="13" y="5" width="1" height="1" fill="#000" />
+      <rect x="12" y="6" width="1" height="1" fill="#000" />
+      <rect x="11" y="7" width="1" height="1" fill="#000" />
+      <rect x="13" y="7" width="1" height="1" fill="#000" />
     </svg>
   );
 }

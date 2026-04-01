@@ -42,7 +42,7 @@ export default function AboutWindow() {
         {[
           { label: 'GitHub',   href: 'https://github.com/samfunge' },
           { label: 'LinkedIn', href: 'https://linkedin.com/in/samfunge' },
-          { label: 'Email',    href: 'mailto:samuelfunge@icloud.com' },
+          { label: 'Email',    href: 'mailto:sam@funge.dev' },
         ].map(({ label, href }) => (
           <a
             key={label}

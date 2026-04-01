@@ -19,15 +19,24 @@ import {
 // Lazy imports keep each content module out of the initial bundle.
 import dynamic from 'next/dynamic';
 
-const CONTENT: Record<WindowId, React.ComponentType> = {
-  about:    dynamic(() => import('@/components/windows/AboutWindow')),
-  projects: dynamic(() => import('@/components/windows/ProjectsWindow')),
-  resume:   dynamic(() => import('@/components/windows/ResumeWindow')),
-  games:    dynamic(() => import('@/components/windows/GamesWindow')),
-  snake:    dynamic(() => import('@/components/games/Snake')),
-  pong:     dynamic(() => import('@/components/games/Snake')), // stub until Stage 6
-  trash:    dynamic(() => import('@/components/windows/TrashWindow')),
+const FolderWindow   = dynamic(() => import('@/components/windows/FolderWindow'));
+const STATIC_CONTENT: Record<string, React.ComponentType> = {
+  about:       dynamic(() => import('@/components/windows/AboutWindow')),
+  projects:    dynamic(() => import('@/components/windows/ProjectsWindow')),
+  resume:      dynamic(() => import('@/components/windows/ResumeWindow')),
+  games:       dynamic(() => import('@/components/windows/GamesWindow')),
+  snake:       dynamic(() => import('@/components/games/Snake')),
+  pong:        dynamic(() => import('@/components/games/Pong')),
+  breakout:    dynamic(() => import('@/components/games/Breakout')),
+  tetris:      dynamic(() => import('@/components/games/Tetris')),
+  minesweeper: dynamic(() => import('@/components/games/Minesweeper')),
+  trash:       dynamic(() => import('@/components/windows/TrashWindow')),
 };
+
+function getContent(id: WindowId): React.ComponentType {
+  if (id.startsWith('folder-')) return FolderWindow;
+  return STATIC_CONTENT[id] ?? (() => null);
+}
 
 // ─── Resize handle size ───────────────────────────────────────────────────────
 const RESIZE_HANDLE = 12;
@@ -122,7 +131,7 @@ function Window({ win, containerRef }: WindowProps) {
   }, []);
 
   // ── Content ────────────────────────────────────────────────────────────────
-  const ContentComponent = CONTENT[win.id];
+  const ContentComponent = getContent(win.id);
 
   return (
     <motion.div

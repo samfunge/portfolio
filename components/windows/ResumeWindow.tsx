@@ -148,7 +148,7 @@ export default function ResumeWindow() {
             Samuel Funge
           </div>
           <div style={{ color: '#555', fontSize: 9, lineHeight: 1.6 }}>
-            samuelfunge@icloud.com<br />
+            sam@funge.dev<br />
             github.com/samfunge · linkedin.com/in/samfunge
           </div>
         </div>

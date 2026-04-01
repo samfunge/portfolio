@@ -2,9 +2,8 @@
 
 import { create } from 'zustand/react';
 
-// ─── Window IDs ──────────────────────────────────────────────────────────────
-// Every openable window in the OS has a stable string ID.
-// Add new IDs here as new windows are built in later stages.
+// ─── Window IDs ───────────────────────────────────────────────────────────────
+// folder-${string} covers any user-created folder window dynamically.
 
 export type WindowId =
   | 'about'
@@ -13,18 +12,20 @@ export type WindowId =
   | 'games'
   | 'snake'
   | 'pong'
-  | 'trash';
+  | 'breakout'
+  | 'tetris'
+  | 'minesweeper'
+  | 'trash'
+  | `folder-${string}`;
+
+type StaticWindowId = Exclude<WindowId, `folder-${string}`>;
 
 // ─── Desktop Icon definitions ─────────────────────────────────────────────────
-// Stored in the store so Stage 4 can derive the icon list from a single source
-// of truth rather than hard-coding it in JSX.
 
 export interface DesktopIconDef {
   id: WindowId;
   label: string;
-  /** Which SVG icon variant to render (resolved in DesktopIcon component) */
   icon: 'folder' | 'file-text' | 'file-pdf' | 'games' | 'trash';
-  /** Grid position on the desktop (column, row) in 80px units */
   gridCol: number;
   gridRow: number;
 }
@@ -34,145 +35,113 @@ export interface DesktopIconDef {
 export interface WindowState {
   id: WindowId;
   title: string;
-  /** Current position — updated as the user drags */
   x: number;
   y: number;
   width: number;
   height: number;
-  /** Stack order — higher = on top */
   zIndex: number;
   isMinimised: boolean;
+}
+
+// ─── User folder ──────────────────────────────────────────────────────────────
+
+export interface UserFolder {
+  id: string;          // e.g. "folder-abc123"
+  label: string;
 }
 
 // ─── Full OS state ────────────────────────────────────────────────────────────
 
 interface DesktopState {
-  /** Map of currently open windows (only open ones are present) */
-  windows: Partial<Record<WindowId, WindowState>>;
-  /** The window currently receiving focus (for titlebar highlight) */
+  windows:        Partial<Record<string, WindowState>>;
   activeWindowId: WindowId | null;
-  /** Global z-index counter — incremented each time a window is focused */
-  topZ: number;
-  /** Whether the boot sequence has completed */
-  booted: boolean;
+  topZ:           number;
+  booted:         boolean;
+  trashFull:      boolean;
+  userFolders:    UserFolder[];
 
-  // ── Actions ──────────────────────────────────────────────────────────────
-
-  /** Open a window, or bring it to front if already open */
-  openWindow: (id: WindowId) => void;
-  /** Permanently close (remove) a window */
-  closeWindow: (id: WindowId) => void;
-  /** Bring a window to the top of the z stack and mark it active */
-  focusWindow: (id: WindowId) => void;
-  /** Update position after a drag gesture */
-  moveWindow: (id: WindowId, x: number, y: number) => void;
-  /** Resize a window (used by resize handle in later stages) */
+  openWindow:   (id: WindowId, titleOverride?: string) => void;
+  closeWindow:  (id: WindowId) => void;
+  focusWindow:  (id: WindowId) => void;
+  moveWindow:   (id: WindowId, x: number, y: number) => void;
   resizeWindow: (id: WindowId, width: number, height: number) => void;
-  /** Mark the boot sequence as complete */
-  finishBoot: () => void;
+  finishBoot:   () => void;
+  restart:      () => void;
+  createFolder: (label?: string) => void;
+  emptyTrash:   () => void;
 }
 
-// ─── Default window configs ───────────────────────────────────────────────────
-// Each entry defines the size and initial position for its window type.
-// Positions are slightly offset so stacked windows cascade visually.
+// ─── Static window defaults ───────────────────────────────────────────────────
 
-const WINDOW_DEFAULTS: Record<
-  WindowId,
+const STATIC_DEFAULTS: Record<
+  StaticWindowId,
   { title: string; x: number; y: number; width: number; height: number }
 > = {
-  about: {
-    title: 'About.txt',
-    x: 80,
-    y: 48,
-    width: 420,
-    height: 320,
-  },
-  projects: {
-    title: 'Projects',
-    x: 120,
-    y: 64,
-    width: 480,
-    height: 360,
-  },
-  resume: {
-    title: 'Resume.pdf',
-    x: 160,
-    y: 80,
-    width: 440,
-    height: 520,
-  },
-  games: {
-    title: 'Games',
-    x: 100,
-    y: 56,
-    width: 320,
-    height: 260,
-  },
-  snake: {
-    title: 'Snake',
-    x: 140,
-    y: 72,
-    width: 320,
-    height: 360,
-  },
-  pong: {
-    title: 'Pong',
-    x: 160,
-    y: 80,
-    width: 360,
-    height: 300,
-  },
-  trash: {
-    title: 'Trash',
-    x: 200,
-    y: 100,
-    width: 260,
-    height: 180,
-  },
+  about:    { title: 'About.txt',  x: 80,  y: 48, width: 420, height: 320 },
+  projects: { title: 'Projects',   x: 120, y: 64, width: 480, height: 380 },
+  resume:   { title: 'Resume.pdf', x: 160, y: 80, width: 440, height: 520 },
+  games:    { title: 'Games',      x: 100, y: 56, width: 480, height: 260 },
+  snake:       { title: 'Snake',       x: 140, y: 72,  width: 300, height: 370 },
+  pong:        { title: 'Pong',        x: 160, y: 60,  width: 380, height: 270 },
+  breakout:    { title: 'Breakout',    x: 120, y: 60,  width: 310, height: 400 },
+  tetris:      { title: 'Tetris',      x: 150, y: 55,  width: 320, height: 400 },
+  minesweeper: { title: 'Minesweeper', x: 130, y: 65,  width: 290, height: 330 },
+  trash:       { title: 'Trash',       x: 200, y: 100, width: 260, height: 180 },
 };
 
-// ─── Desktop icon layout ──────────────────────────────────────────────────────
-// Right-side column, top-to-bottom, matching classic Mac finder icon placement.
+// ─── Static desktop icons ─────────────────────────────────────────────────────
 
 export const DESKTOP_ICONS: DesktopIconDef[] = [
-  { id: 'about',    label: 'About.txt',   icon: 'file-text', gridCol: 1, gridRow: 1 },
-  { id: 'projects', label: 'Projects',    icon: 'folder',    gridCol: 1, gridRow: 2 },
-  { id: 'resume',   label: 'Resume.pdf',  icon: 'file-pdf',  gridCol: 1, gridRow: 3 },
-  { id: 'games',    label: 'Games',       icon: 'games',     gridCol: 1, gridRow: 4 },
-  { id: 'trash',    label: 'Trash',       icon: 'trash',     gridCol: 1, gridRow: 5 },
+  { id: 'about',    label: 'About.txt',  icon: 'file-text', gridCol: 1, gridRow: 1 },
+  { id: 'projects', label: 'Projects',   icon: 'folder',    gridCol: 1, gridRow: 2 },
+  { id: 'resume',   label: 'Resume.pdf', icon: 'file-pdf',  gridCol: 1, gridRow: 3 },
+  { id: 'games',    label: 'Games',      icon: 'games',     gridCol: 1, gridRow: 4 },
+  { id: 'trash',    label: 'Trash',      icon: 'trash',     gridCol: 1, gridRow: 5 },
 ];
+
+let folderCounter = 1;
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useDesktopStore = create<DesktopState>((set, get) => ({
-  windows: {},
+  windows:        {},
   activeWindowId: null,
-  topZ: 10,
-  booted: false,
+  topZ:           10,
+  booted:         false,
+  trashFull:      false,
+  userFolders:    [],
 
-  openWindow: (id) => {
+  openWindow: (id, titleOverride) => {
     const existing = get().windows[id];
-    if (existing) {
-      get().focusWindow(id);
-      return;
-    }
+    if (existing) { get().focusWindow(id); return; }
 
-    const defaults = WINDOW_DEFAULTS[id];
+    const isFolder = id.startsWith('folder-');
+    const defaults = isFolder
+      ? {
+          title:  titleOverride
+                  ?? get().userFolders.find(f => f.id === id)?.label
+                  ?? 'Untitled Folder',
+          x:      60 + Math.floor(Math.random() * 140),
+          y:      44 + Math.floor(Math.random() * 100),
+          width:  300,
+          height: 220,
+        }
+      : STATIC_DEFAULTS[id as StaticWindowId];
+
     const nextZ = get().topZ + 1;
-
-    set((state) => ({
+    set(state => ({
       topZ: nextZ,
       activeWindowId: id,
       windows: {
         ...state.windows,
         [id]: {
           id,
-          title: defaults.title,
-          x: defaults.x,
-          y: defaults.y,
-          width: defaults.width,
-          height: defaults.height,
-          zIndex: nextZ,
+          title:       defaults.title,
+          x:           defaults.x,
+          y:           defaults.y,
+          width:       defaults.width,
+          height:      defaults.height,
+          zIndex:      nextZ,
           isMinimised: false,
         } satisfies WindowState,
       },
@@ -180,17 +149,14 @@ export const useDesktopStore = create<DesktopState>((set, get) => ({
   },
 
   closeWindow: (id) => {
-    set((state) => {
+    set(state => {
       const next = { ...state.windows };
       delete next[id];
-
       const nextActive =
         state.activeWindowId === id
-          ? (Object.values(next) as WindowState[]).sort(
-              (a, b) => b.zIndex - a.zIndex
-            )[0]?.id ?? null
+          ? (Object.values(next) as WindowState[])
+              .sort((a, b) => b.zIndex - a.zIndex)[0]?.id ?? null
           : state.activeWindowId;
-
       return { windows: next, activeWindowId: nextActive };
     });
   },
@@ -199,31 +165,39 @@ export const useDesktopStore = create<DesktopState>((set, get) => ({
     const win = get().windows[id];
     if (!win) return;
     const nextZ = get().topZ + 1;
-    set((state) => ({
+    set(state => ({
       topZ: nextZ,
       activeWindowId: id,
-      windows: {
-        ...state.windows,
-        [id]: { ...win, zIndex: nextZ },
-      },
+      windows: { ...state.windows, [id]: { ...win, zIndex: nextZ } },
     }));
   },
 
   moveWindow: (id, x, y) => {
     const win = get().windows[id];
     if (!win) return;
-    set((state) => ({
-      windows: { ...state.windows, [id]: { ...win, x, y } },
-    }));
+    set(state => ({ windows: { ...state.windows, [id]: { ...win, x, y } } }));
   },
 
   resizeWindow: (id, width, height) => {
     const win = get().windows[id];
     if (!win) return;
-    set((state) => ({
-      windows: { ...state.windows, [id]: { ...win, width, height } },
-    }));
+    set(state => ({ windows: { ...state.windows, [id]: { ...win, width, height } } }));
   },
 
   finishBoot: () => set({ booted: true }),
+
+  restart: () => {
+    // Close all windows and re-run the boot sequence
+    set({ booted: false, windows: {}, activeWindowId: null, topZ: 10 });
+  },
+
+  createFolder: (label) => {
+    const id: WindowId = `folder-${Date.now()}-${folderCounter++}`;
+    const finalLabel = label ?? `Untitled Folder ${folderCounter - 1}`;
+    set(state => ({
+      userFolders: [...state.userFolders, { id, label: finalLabel }],
+    }));
+  },
+
+  emptyTrash: () => set({ trashFull: false }),
 }));
