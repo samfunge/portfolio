@@ -272,9 +272,15 @@ export default function Snake() {
     if (ctx) {
       render(ctx, snakeRef.current, foodRef.current, phaseRef.current, scoreRef.current, hiRef.current);
     }
-
-    rafRef.current = requestAnimationFrame(tick);
   }, [play, posthog]);
+
+  // Game loop trigger
+  useEffect(() => {
+    if (phase !== 'playing') return;
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [phase, tick]);
+
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 

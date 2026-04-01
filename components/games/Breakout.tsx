@@ -191,6 +191,7 @@ export default function Breakout() {
         s.ball.x + BALL_R > bx && s.ball.x - BALL_R < bx + bw &&
         s.ball.y + BALL_R > by && s.ball.y - BALL_R < by + bh
       ) {
+        // eslint-disable-next-line react-hooks/immutability
         b.alive = false;
         aliveBricks--;
         s.score += (BRICK_ROWS - b.row) * 10;
@@ -212,8 +213,15 @@ export default function Breakout() {
     if (aliveBricks === 0) { endGame(true); return; }
 
     redraw();
-    rafRef.current = requestAnimationFrame(loop);
   }, [play, endGame, redraw]);
+
+  // Game loop trigger
+  useEffect(() => {
+    if (phase !== 'playing') return;
+    rafRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [phase, loop]);
+
 
   useEffect(() => { redraw(); wrapRef.current?.focus(); }, [redraw]);
 

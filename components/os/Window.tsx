@@ -11,7 +11,6 @@ import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '@/components/providers/AudioProvider';
 import {
   useDesktopStore,
-  type WindowId,
   type WindowState,
 } from '@/store/useDesktopStore';
 
@@ -32,11 +31,6 @@ const STATIC_CONTENT: Record<string, React.ComponentType> = {
   minesweeper: dynamic(() => import('@/components/games/Minesweeper')),
   trash:       dynamic(() => import('@/components/windows/TrashWindow')),
 };
-
-function getContent(id: WindowId): React.ComponentType {
-  if (id.startsWith('folder-')) return FolderWindow;
-  return STATIC_CONTENT[id] ?? (() => null);
-}
 
 // ─── Resize handle size ───────────────────────────────────────────────────────
 const RESIZE_HANDLE = 12;
@@ -131,7 +125,8 @@ function Window({ win, containerRef }: WindowProps) {
   }, []);
 
   // ── Content ────────────────────────────────────────────────────────────────
-  const ContentComponent = getContent(win.id);
+  const isFolder = win.id.startsWith('folder-');
+  const StaticComp = STATIC_CONTENT[win.id];
 
   return (
     <motion.div
@@ -179,7 +174,7 @@ function Window({ win, containerRef }: WindowProps) {
           role="button"
           aria-label="Close window"
           tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && handleClose(e as any)}
+          onKeyDown={(e) => e.key === 'Enter' && handleClose(e as unknown as React.MouseEvent)}
         />
 
         {/* Title */}
@@ -191,7 +186,7 @@ function Window({ win, containerRef }: WindowProps) {
 
       {/* ── Body ───────────────────────────────────────────────────────────── */}
       <div className="mac-window-body">
-        <ContentComponent />
+        {isFolder ? <FolderWindow /> : StaticComp ? <StaticComp /> : null}
       </div>
 
       {/* ── Resize handle (bottom-right) ────────────────────────────────────── */}

@@ -196,12 +196,16 @@ export default function Tetris() {
   const phaseRef   = useRef<Phase>('idle');
   const boardRef   = useRef<Board>(emptyBoard());
   const pieceRef   = useRef<Piece | null>(null);
-  const nextRef    = useRef<number>(Math.floor(Math.random() * PIECES.length));
+  const nextRef    = useRef<number>(0);
   const scoreRef   = useRef(0);
   const linesRef   = useRef(0);
   const levelRef   = useRef(1);
   const rafRef     = useRef<number>(0);
   const lastTickRef = useRef<number>(0);
+
+  useEffect(() => {
+    nextRef.current = Math.floor(Math.random() * PIECES.length);
+  }, []);
 
   const [, forceRedraw] = useState(0);
 
@@ -255,8 +259,15 @@ export default function Tetris() {
       }
     }
     redraw();
-    rafRef.current = requestAnimationFrame(loop);
   }, [lockPiece, redraw]);
+
+  // Game loop trigger
+  useEffect(() => {
+    if (phase !== 'playing') return;
+    rafRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [phase, loop]);
+
 
   useEffect(() => { redraw(); wrapRef.current?.focus(); }, [redraw]);
 

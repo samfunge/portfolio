@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '@/components/providers/AudioProvider';
-import { useDesktopStore, type WindowId, type DesktopIconDef } from '@/store/useDesktopStore';
+import { useDesktopStore, type DesktopIconDef } from '@/store/useDesktopStore';
 import {
   FolderIcon,
   FileTextIcon,

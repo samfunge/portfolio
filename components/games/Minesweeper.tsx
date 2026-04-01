@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '@/components/providers/AudioProvider';
 
@@ -22,14 +22,55 @@ interface CellState {
 
 type GameStatus = 'playing' | 'won' | 'lost';
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function generateGrid(): CellState[][] {
+  const newGrid: CellState[][] = Array(ROWS).fill(null).map(() =>
+    Array(COLS).fill(null).map(() => ({
+      value: 0,
+      revealed: false,
+      flagged: false,
+    }))
+  );
+
+  // Place mines
+  let placedMines = 0;
+  while (placedMines < MINES_COUNT) {
+    const r = Math.floor(Math.random() * ROWS);
+    const c = Math.floor(Math.random() * COLS);
+    if (newGrid[r][c].value !== 'mine') {
+      newGrid[r][c].value = 'mine';
+      placedMines++;
+    }
+  }
+
+  // Calculate neighbors
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (newGrid[r][c].value === 'mine') continue;
+      let count = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          const nr = r + dr;
+          const nc = c + dc;
+          if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && newGrid[nr][nc].value === 'mine') {
+            count++;
+          }
+        }
+      }
+      newGrid[r][c].value = count;
+    }
+  }
+  return newGrid;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Minesweeper() {
-  const [grid, setGrid] = useState<CellState[][]>([]);
+  const [grid, setGrid] = useState<CellState[][]>(() => generateGrid());
   const [status, setStatus] = useState<GameStatus>('playing');
   const [minesLeft, setMinesLeft] = useState(MINES_COUNT);
   const [timer, setTimer] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   const posthog = usePostHog();
   const { play } = useAudio();
@@ -37,61 +78,20 @@ export default function Minesweeper() {
   // ─── Initialization ─────────────────────────────────────────────────────────
 
   const initGame = useCallback(() => {
-    // Create empty grid
-    const newGrid: CellState[][] = Array(ROWS).fill(null).map(() =>
-      Array(COLS).fill(null).map(() => ({
-        value: 0,
-        revealed: false,
-        flagged: false,
-      }))
-    );
-
-    // Place mines
-    let placedMines = 0;
-    while (placedMines < MINES_COUNT) {
-      const r = Math.floor(Math.random() * ROWS);
-      const c = Math.floor(Math.random() * COLS);
-      if (newGrid[r][c].value !== 'mine') {
-        newGrid[r][c].value = 'mine';
-        placedMines++;
-      }
-    }
-
-    // Calculate neighbors
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        if (newGrid[r][c].value === 'mine') continue;
-        let count = 0;
-        for (let dr = -1; dr <= 1; dr++) {
-          for (let dc = -1; dc <= 1; dc++) {
-            const nr = r + dr;
-            const nc = c + dc;
-            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && newGrid[nr][nc].value === 'mine') {
-              count++;
-            }
-          }
-        }
-        newGrid[r][c].value = count;
-      }
-    }
-
-    setGrid(newGrid);
+    setGrid(generateGrid());
     setStatus('playing');
     setMinesLeft(MINES_COUNT);
     setTimer(0);
-    
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimer((t) => Math.min(t + 1, 999));
-    }, 1000);
   }, []);
 
+  // Timer logic
   useEffect(() => {
-    initGame();
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [initGame]);
+    if (status !== 'playing') return;
+    const id = setInterval(() => {
+      setTimer((t) => Math.min(t + 1, 999));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [status]);
 
   // ─── Game Actions ───────────────────────────────────────────────────────────
 
@@ -112,7 +112,6 @@ export default function Minesweeper() {
       setGrid(newGrid);
       setStatus('lost');
       play('error');
-      if (timerRef.current) clearInterval(timerRef.current);
       posthog.capture('game_played', { game: 'minesweeper', status: 'lost', score: timer });
       return;
     }
@@ -121,7 +120,6 @@ export default function Minesweeper() {
       if (row < 0 || row >= ROWS || col < 0 || col >= COLS || newGrid[row][col].revealed || newGrid[row][col].flagged) return;
       
       newGrid[row][col].revealed = true;
-      play('click');
 
       if (newGrid[row][col].value === 0) {
         for (let dr = -1; dr <= 1; dr++) {
@@ -133,6 +131,7 @@ export default function Minesweeper() {
     };
 
     floodFill(r, c);
+    play('click');
     setGrid(newGrid);
 
     // Check Win
@@ -145,7 +144,6 @@ export default function Minesweeper() {
 
     if (revealedCount === ROWS * COLS - MINES_COUNT) {
       setStatus('won');
-      if (timerRef.current) clearInterval(timerRef.current);
       posthog.capture('game_played', { game: 'minesweeper', status: 'won', score: timer });
     }
   };

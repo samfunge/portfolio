@@ -205,8 +205,15 @@ export default function Pong() {
     }
 
     redraw();
-    rafRef.current = requestAnimationFrame(loop);
   }, [play, posthog, redraw]);
+
+  // Game loop trigger
+  useEffect(() => {
+    if (phase !== 'playing') return;
+    rafRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [phase, loop]);
+
 
   useEffect(() => {
     redraw();

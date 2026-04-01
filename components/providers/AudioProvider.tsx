@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useRef,
   useState,
 } from 'react';
@@ -46,7 +45,14 @@ export default function AudioProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem('mac-os-muted') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [unlocked, setUnlocked] = useState(false);
 
   // Cache one HTMLAudioElement per sound key so we don't re-create them.
@@ -76,16 +82,6 @@ export default function AudioProvider({
       }
       return next;
     });
-  }, []);
-
-  // Restore mute preference on first render.
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('mac-os-muted');
-      if (stored === 'true') setMuted(true);
-    } catch {
-      // ignore
-    }
   }, []);
 
   const play = useCallback(

@@ -24,8 +24,7 @@ describe('useDesktopStore', () => {
     openWindow('about');
 
     const state = useDesktopStore.getState();
-    expect(state.windows['about']).toBeDefined();
-    expect(state.windows['about'].title).toBe('About.txt');
+    expect(state.windows['about']!.title).toBe('About.txt');
     expect(state.activeWindowId).toBe('about');
   });
 
