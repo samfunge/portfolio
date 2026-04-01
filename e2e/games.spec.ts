@@ -10,13 +10,13 @@ test.beforeEach(async ({ page }) => {
 test('can open games folder and launch snake', async ({ page }) => {
   // Open games folder
   await page.getByRole('button', { name: /Games/ }).dblclick();
-  await expect(page.locator('.mac-window')).filter({ hasText: 'Games' }).toBeVisible();
+  await expect(page.locator('.mac-window').filter({ hasText: 'Games' })).toBeVisible();
 
   // Launch snake
   await page.getByRole('button', { name: /Snake/ }).dblclick();
 
   // Snake window should appear
-  await expect(page.locator('.mac-window')).filter({ hasText: 'Snake' }).toBeVisible();
+  await expect(page.locator('.mac-window').filter({ hasText: 'Snake' })).toBeVisible();
 
   // Canvas should be there
   const canvas = page.locator('canvas[aria-label="Snake game canvas"]');
