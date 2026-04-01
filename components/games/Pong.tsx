@@ -209,21 +209,18 @@ export default function Pong() {
     redraw();
   }, [play, posthog, redraw]);
 
-  // Game loop trigger
-  useEffect(() => {
-    if (phase !== 'playing') return;
-    rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [phase, loop]);
-
-
+  // Lifecycle
   useEffect(() => {
     redraw();
     wrapRef.current?.focus();
   }, [redraw]);
 
+  // Game loop trigger
   useEffect(() => {
-    if (phase !== 'playing') { cancelAnimationFrame(rafRef.current); return; }
+    if (phase !== 'playing') {
+      cancelAnimationFrame(rafRef.current);
+      return;
+    }
     lastRef.current = performance.now();
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);

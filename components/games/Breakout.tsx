@@ -223,18 +223,18 @@ export default function Breakout() {
     redraw();
   }, [play, endGame, redraw]);
 
+  // Lifecycle
+  useEffect(() => {
+    redraw();
+    wrapRef.current?.focus();
+  }, [redraw]);
+
   // Game loop trigger
   useEffect(() => {
-    if (phase !== 'playing') return;
-    rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [phase, loop]);
-
-
-  useEffect(() => { redraw(); wrapRef.current?.focus(); }, [redraw]);
-
-  useEffect(() => {
-    if (phase !== 'playing') { cancelAnimationFrame(rafRef.current); return; }
+    if (phase !== 'playing') {
+      cancelAnimationFrame(rafRef.current);
+      return;
+    }
     lastRef.current = performance.now();
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);

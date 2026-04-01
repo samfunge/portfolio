@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAudio } from '@/components/providers/AudioProvider';
 import { useDesktopStore } from '@/store/useDesktopStore';
-import { useIsMobile } from '@/hooks/useIsMobile';
 import { HappyMacIcon } from './MacIcons';
 
 type Phase =
