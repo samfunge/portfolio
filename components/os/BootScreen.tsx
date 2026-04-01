@@ -22,7 +22,6 @@ export default function BootScreen() {
   const { unlock, play } = useAudio();
   const finishBoot = useDesktopStore((s) => s.finishBoot);
   const booted = useDesktopStore((s) => s.booted);
-  const isMobile = useIsMobile();
 
   const [phase, setPhase] = useState<Phase>('booting');
   const [progress, setProgress] = useState(0);
