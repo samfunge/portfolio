@@ -7,7 +7,6 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { HappyMacIcon } from './MacIcons';
 
 type Phase =
-  | 'power'      // Black screen — "click to start"
   | 'booting'    // White screen + Happy Mac + progress bar
   | 'done';      // Fading out
 
@@ -25,18 +24,19 @@ export default function BootScreen() {
   const booted = useDesktopStore((s) => s.booted);
   const isMobile = useIsMobile();
 
-  const [phase, setPhase] = useState<Phase>('power');
+  const [phase, setPhase] = useState<Phase>('booting');
   const [progress, setProgress] = useState(0);
   const [msgIdx, setMsgIdx] = useState(0);
   const [fading, setFading] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Start the boot sequence on first user click ────────────────────────────
-  function handlePowerClick() {
-    unlock();            // unblock browser autoplay
-    play('startup');     // 🔊 startup chime
-    setPhase('booting');
-  }
+  // ── Auto-start the boot sequence ───────────────────────────────────────────
+  useEffect(() => {
+    // Note: Audio might be blocked by browser autoplay policies 
+    // without a user gesture, but we proceed as requested.
+    unlock();
+    play('startup');
+  }, [unlock, play]);
 
   // ── Progress bar ticker ────────────────────────────────────────────────────
   useEffect(() => {
@@ -74,44 +74,6 @@ export default function BootScreen() {
 
   // ── Don't render once desktop is live ─────────────────────────────────────
   if (booted && phase === 'done') return null;
-
-  // ── Power screen ──────────────────────────────────────────────────────────
-  if (phase === 'power') {
-    return (
-      <div
-        className="boot-screen"
-        style={{ background: '#000', cursor: 'pointer' }}
-        onClick={handlePowerClick}
-        role="button"
-        aria-label={isMobile ? "Tap to start" : "Click to start"}
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && handlePowerClick()}
-      >
-        {/* Power button symbol */}
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 48 48"
-          fill="none"
-          style={{ opacity: 0.8 }}
-        >
-          <circle cx="24" cy="24" r="20" stroke="#fff" strokeWidth="3" fill="none" />
-          <line x1="24" y1="6" x2="24" y2="26" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
-        </svg>
-        <span
-          style={{
-            color: '#fff',
-            fontFamily: 'var(--font-chicago)',
-            fontSize: 11,
-            letterSpacing: 1,
-            opacity: 0.7,
-          }}
-        >
-          {isMobile ? 'TAP' : 'CLICK'} TO START
-        </span>
-      </div>
-    );
-  }
 
   // ── Boot animation ─────────────────────────────────────────────────────────
   return (
