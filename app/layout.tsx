@@ -5,6 +5,7 @@ import PostHogProvider from "@/components/providers/PostHogProvider";
 import AudioProvider from "@/components/providers/AudioProvider";
 import AnimatedFavicon from "@/components/os/AnimatedFavicon";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Fallback pixel font — used only when ChicagoFLF.ttf is absent from /public/fonts/.
 // The CSS @font-face in globals.css references ChicagoFLF first; this variable
@@ -47,6 +48,7 @@ export default function RootLayout({
           </AudioProvider>
         </PostHogProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
